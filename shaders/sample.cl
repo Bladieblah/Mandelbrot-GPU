@@ -150,6 +150,66 @@ inline float gaussianRand(
  }
 
 /**
+ * Checks
+ */
+
+constant float2 CENTER_1 = {-0.1225611668766536, 0.7448617666197446};
+constant float RADIUS_1 = 0.095;
+
+constant float2 CENTER_2 = {-1.3107026413368228, 0};
+constant float2 CENTER_3 = {0.282271390766914, 0.5300606175785252};
+constant float RADIUS_3 = 0.044;
+
+constant float2 CENTER_4 = {-0.5043401754462431, 0.5627657614529813};
+constant float RADIUS_4 = 0.037;
+constant float2 CENTER_5 = {0.3795135880159236, 0.3349323055974974};
+constant float RADIUS_5 = 0.0225;
+
+inline bool isValid(float2 coord) {
+    float c2 = cnorm2(coord);
+    float a = coord.x;
+
+    if (c2 >= 4) {
+        return false;
+    }
+    
+    // Main bulb
+    if (256.0 * c2 * c2 - 96.0 * c2 + 32.0 * a < 3.0) {
+        return false;
+    }
+
+    // Head
+    if (16.0 * (c2 + 2.0 * a + 1.0) < 1.0) {
+        return false;
+    }
+
+    coord.y = fabs(coord.y);
+
+    // 2-step bulbs
+    if (cnorm(coord - CENTER_1) < RADIUS_1) {
+        return false;
+    }
+
+    // 3-step bulbs
+    if (cnorm(coord - CENTER_2) < RADIUS_3) {
+        return false;
+    }
+    if (cnorm(coord - CENTER_3) < RADIUS_3) {
+        return false;
+    }
+
+    // 4-step bulbs
+    if (cnorm(coord - CENTER_4) < RADIUS_4) {
+        return false;
+    }
+    if (cnorm(coord - CENTER_5) < RADIUS_5) {
+        return false;
+    }
+
+    return true;
+}
+
+/**
  * Coordinate transformations
  */
 
@@ -167,17 +227,10 @@ inline float2 rotateCoords(float2 coords, ViewSettings view) {
     };
 }
 
-inline int2 screenToPixel(float2 screenCoord, ViewSettings view) {
-    return (int2) {
-        (1 + screenCoord.x) / 2 * view.sizeX,
-        (1 + screenCoord.y) / 2 * view.sizeY
-    };
-}
-
 inline float2 screenToFractal(float2 screenCoord, ViewSettings view) {
     float2 tmp = rotateCoords((float2){
-        tmp.x * view.scaleX,
-        tmp.y * view.scaleY
+        screenCoord.x * view.scaleX,
+        screenCoord.y * view.scaleY
     }, view);
 
     return (float2){
@@ -188,8 +241,8 @@ inline float2 screenToFractal(float2 screenCoord, ViewSettings view) {
 
 inline float2 pixelToScreen(int2 pixelCoord, ViewSettings view) {
     return (float2) {
-        (2. * pixelCoord.x) / view.sizeX - 1.,
-        (2. * pixelCoord.y) / view.sizeY - 1.
+        (2. * pixelCoord.x) / (float)view.sizeX - 1.,
+        (2. * pixelCoord.y) / (float)view.sizeY - 1.
     };
 }
 
@@ -204,6 +257,7 @@ inline float2 pixelToScreen(int2 pixelCoord, ViewSettings view) {
  typedef struct Particle {
     float2 pos, offset;
     unsigned int iterCount;
+    bool escaped;
 } Particle;
 
 __kernel void initParticles(global Particle *particles, ViewSettings view) {
@@ -218,6 +272,7 @@ __kernel void initParticles(global Particle *particles, ViewSettings view) {
     particles[gid].pos = offset;
     particles[gid].offset = offset;
     particles[gid].iterCount = 1;
+    particles[gid].escaped = !isValid(offset);
 }
 
 __kernel void mandelStep(global Particle *particles, unsigned int stepCount) {
@@ -229,8 +284,13 @@ __kernel void mandelStep(global Particle *particles, unsigned int stepCount) {
 
     Particle tmp = particles[gid];
 
+    if (tmp.escaped) {
+        return;
+    }
+
     for (size_t i = 0; i < stepCount; i++) {
         if (cnorm2(tmp.pos) > 4.) {
+            tmp.escaped = true;
             break;
         }
 
@@ -252,13 +312,20 @@ __kernel void renderImage(
     
     int index = (W * y + x);
 
+    if (!particles[index].escaped) {
+        data[3 * index] = 0;
+        data[3 * index + 1] = 0;
+        data[3 * index + 2] = 0;
+        return;
+    }
+
     float period = 255;
     float count = (float)particles[index].iterCount;
     float ease = clamp(count * 0.01, 0., 1.);
 
     float phase = count / 256.;
 
-    data[3 * index] = ease * pown(cos(phase), 2) * 4294967295;
-    data[3 * index + 1] = ease * pown(sin(phase), 2) * 4294967295;
-    data[3 * index + 2] = ease * pown(cos(phase + M_1_PI * 0.25), 2) * 4294967295;
+    data[3 * index] = ease * pown(cos(phase), 2) * 2147483647;
+    data[3 * index + 1] = ease * pown(sin(phase), 2) * 2147483647;
+    data[3 * index + 2] = ease * pown(cos(phase + M_1_PI * 0.25), 2) * 2147483647;
 }

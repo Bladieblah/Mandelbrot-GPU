@@ -5,9 +5,9 @@
 #include "opencl.hpp"
 
 typedef struct Particle {
-    cl_float2 pos, offsert;
-    cl_float2 offset;
+    cl_float2 pos, offset;
     unsigned int iterCount;
+    bool escaped;
 } Particle;
 
 typedef struct WindowSettings {

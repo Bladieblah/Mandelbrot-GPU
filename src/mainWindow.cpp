@@ -116,8 +116,6 @@ void updateView() {
     fprintf(stderr, "center = (%.3f, %.3f)\n", viewMain.centerX, viewMain.centerY);
     fprintf(stderr, "theta = %.3f\n", viewMain.theta);
 
-    viewStackMain.push(ViewSettings(viewMain));
-
     viewMain.cosTheta = cos(viewMain.theta);
     viewMain.sinTheta = sin(viewMain.theta);
 
@@ -135,6 +133,8 @@ void selectRegion() {
 
     WorldCoordinate downF = downP.toPixel(settingsMain).toWorld(viewMain);
     WorldCoordinate upF   = upP.toPixel(settingsMain).toWorld(viewMain);
+
+    viewStackMain.push(ViewSettings(viewMain));
 
     viewMain.scaleY = sqrt(pow(upF.x - downF.x, 2) + pow(upF.y - downF.y, 2));
     viewMain.centerX = downF.x;
@@ -169,6 +169,8 @@ void keyPressedMain(unsigned char key, int x, int y) {
             if (!viewStackMain.empty()) {
                 viewMain = viewStackMain.top();
                 viewStackMain.pop();
+                opencl->setKernelArg("initParticles", 1, sizeof(ViewSettings), &(viewMain));
+                opencl->step("initParticles");
             }
             break;
 
@@ -188,6 +190,8 @@ void keyPressedMain(unsigned char key, int x, int y) {
 }
 
 void specialKeyPressedMain(int key, int x, int y) {
+    viewStackMain.push(ViewSettings(viewMain));
+
     switch (key) {
         case GLUT_KEY_RIGHT:
             viewMain.centerX += 0.1 * viewMain.scaleY;
