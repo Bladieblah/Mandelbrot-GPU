@@ -149,6 +149,58 @@ inline float gaussianRand(
     return a.x * b.x + a.y * b.y;
  }
 
+ /**
+  * Double precision stuff 
+  */
+
+  typedef struct {
+    float hi;
+    float lo;
+} FloatPair;
+
+void adjust_floats(float* a, float* b) {
+    if (fabs(*b) > 0.5f * fabs(*a)) {
+        float t = *a;
+        *a = copysign(1.0f, *a) * (fabs(*a) * 0.5f + fabs(*b) * 0.5f / fabs(*a));
+        *b = t * t - *a * *a + *a * *b;
+    }
+}
+
+FloatPair add(FloatPair x, FloatPair y) {
+    FloatPair z = {x.hi + y.hi, x.lo + y.lo};
+    adjust_floats(&z.hi, &z.lo);
+    return z;
+}
+
+FloatPair sub(FloatPair x, FloatPair y) {
+    FloatPair z = {x.hi - y.hi, x.lo - y.lo};
+    adjust_floats(&z.hi, &z.lo);
+    return z;
+}
+
+FloatPair mul(FloatPair x, FloatPair y) {
+    FloatPair z = {x.hi * y.hi, x.hi * y.lo + x.lo * y.hi};
+    adjust_floats(&z.hi, &z.lo);
+    return z;
+}
+
+FloatPair div(FloatPair x, FloatPair y) {
+    FloatPair z = {1.0f / y.hi, 0.0f};
+    for (int i = 0; i < 10; ++i) {
+        float qh = z.hi * z.hi;
+        float ql = z.lo * z.lo + 2.0f * z.hi * z.lo;
+        float rh = x.hi - y.hi * qh;
+        float rl = x.lo - y.hi * ql + 2.0f * z.hi * rh;
+        float th = rh * z.hi;
+        float tl = (rl - qh * tl) * z.hi;
+        z.hi -= th;
+        z.lo -= tl;
+    }
+    FloatPair w = {y.hi * z.hi + y.lo * z.lo, y.lo * z.hi};
+    adjust_floats(&w.hi, &w.lo);
+    return w;
+}
+
 /**
  * Checks
  */
@@ -323,7 +375,7 @@ __kernel void renderImage(
     float count = (float)particles[index].iterCount;
     float ease = clamp(count * 0.01, 0., 1.);
 
-    float phase = count / 256.;
+    float phase = count / 64.;
 
     data[3 * index] = ease * pown(cos(phase), 2) * 2147483647;
     data[3 * index + 1] = ease * pown(sin(phase), 2) * 2147483647;
