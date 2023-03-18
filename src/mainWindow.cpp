@@ -116,6 +116,7 @@ void updateView() {
     fprintf(stderr, "center = (%.3f, %.3f)\n", viewMain.centerX, viewMain.centerY);
     fprintf(stderr, "theta = %.3f\n", viewMain.theta);
 
+    viewMain.scaleX = viewMain.scaleY / config->height * config->width;
     viewMain.cosTheta = cos(viewMain.theta);
     viewMain.sinTheta = sin(viewMain.theta);
 

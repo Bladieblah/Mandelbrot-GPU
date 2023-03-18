@@ -222,8 +222,8 @@ typedef struct ViewSettings {
 
 inline float2 rotateCoords(float2 coords, ViewSettings view) {
     return (float2) {
-        view.cosTheta * coords.x + view.sinTheta * coords.y,
-        view.sinTheta * coords.x - view.cosTheta * coords.y
+         view.cosTheta * coords.x + view.sinTheta * coords.y,
+        -view.sinTheta * coords.x + view.cosTheta * coords.y
     };
 }
 
