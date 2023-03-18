@@ -110,27 +110,18 @@ void displayMain() {
     glutSwapBuffers();
 }
 
-void updateView(float scale, float centerX, float centerY, float theta) {
+void updateView() {
     fprintf(stderr, "\n\n\n\n\n\nSetting region to:\n");
-    fprintf(stderr, "scale = %.3f\n", scale);
-    fprintf(stderr, "center = (%.3f, %.3f)\n", centerX, centerY);
-    fprintf(stderr, "theta = %.3f\n", theta);
+    fprintf(stderr, "scale = %.3f\n", viewMain.scaleY);
+    fprintf(stderr, "center = (%.3f, %.3f)\n", viewMain.centerX, viewMain.centerY);
+    fprintf(stderr, "theta = %.3f\n", viewMain.theta);
 
     viewStackMain.push(ViewSettings(viewMain));
 
-    viewMain.scaleX = scale / viewMain.scaleY * viewMain.scaleX;
-    viewMain.scaleY = scale;
-    
-    viewMain.centerX = centerX;
-    viewMain.centerY = centerY;
+    viewMain.cosTheta = cos(viewMain.theta);
+    viewMain.sinTheta = sin(viewMain.theta);
 
-    viewMain.theta = theta;
-    viewMain.cosTheta = cos(theta);
-    viewMain.sinTheta = sin(theta);
-
-    opencl->setKernelArg("mandelStep", 7, sizeof(ViewSettings), (void*)&viewMain);
-
-    opencl->step("resetCount");
+    opencl->setKernelArg("initParticles", 1, sizeof(ViewSettings), &(viewMain));
     opencl->step("initParticles");
 }
 
@@ -145,11 +136,12 @@ void selectRegion() {
     WorldCoordinate downF = downP.toPixel(settingsMain).toWorld(viewMain);
     WorldCoordinate upF   = upP.toPixel(settingsMain).toWorld(viewMain);
 
-    updateView(
-        sqrt(pow(upF.x - downF.x, 2) + pow(upF.y - downF.y, 2)),
-        downF.x, downF.y,
-        atan2(upF.x - downF.x, upF.y - downF.y)
-    );
+    viewMain.scaleY = sqrt(pow(upF.x - downF.x, 2) + pow(upF.y - downF.y, 2));
+    viewMain.centerX = downF.x;
+    viewMain.centerY = downF.y;
+    viewMain.theta = atan2(upF.x - downF.x, upF.y - downF.y);
+
+    updateView();
 }
 
 void keyPressedMain(unsigned char key, int x, int y) {
@@ -177,9 +169,6 @@ void keyPressedMain(unsigned char key, int x, int y) {
             if (!viewStackMain.empty()) {
                 viewMain = viewStackMain.top();
                 viewStackMain.pop();
-                opencl->setKernelArg("mandelStep", 7, sizeof(ViewSettings), (void*)&viewMain);
-                opencl->step("resetCount");
-                opencl->step("initParticles");
             }
             break;
 
@@ -193,11 +182,6 @@ void keyPressedMain(unsigned char key, int x, int y) {
         case 'q':
             exit(0);
             break;
-        case 'R':
-            opencl->step("resetCount");
-        case 'i':
-            opencl->step("initParticles");
-            break;
         default:
             break;
     }
@@ -206,20 +190,21 @@ void keyPressedMain(unsigned char key, int x, int y) {
 void specialKeyPressedMain(int key, int x, int y) {
     switch (key) {
         case GLUT_KEY_RIGHT:
-            updateView(viewMain.scaleY, viewMain.centerX + 0.1 * viewMain.scaleY, viewMain.centerY, viewMain.theta);
+            viewMain.centerX += 0.1 * viewMain.scaleY;
             break;
         case GLUT_KEY_LEFT:
-            updateView(viewMain.scaleY, viewMain.centerX - 0.1 * viewMain.scaleY, viewMain.centerY, viewMain.theta);
+            viewMain.centerX -= 0.1 * viewMain.scaleY;
             break;
         case GLUT_KEY_UP:
-            updateView(viewMain.scaleY, viewMain.centerX, viewMain.centerY + 0.1 * viewMain.scaleY, viewMain.theta);
+            viewMain.centerY += 0.1 * viewMain.scaleY;
             break;
         case GLUT_KEY_DOWN:
-            updateView(viewMain.scaleY, viewMain.centerX, viewMain.centerY - 0.1 * viewMain.scaleY, viewMain.theta);
+            viewMain.centerY -= 0.1 * viewMain.scaleY;
             break;
         default:
             break;
     }
+    updateView();
 }
 
 void translateCamera(ScreenCoordinate coords) {

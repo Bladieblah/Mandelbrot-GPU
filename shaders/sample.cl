@@ -47,32 +47,32 @@ __constant float d[] = {
 };
 
 inline float inverseNormalCdf(float u) {
-	float q, r;
+    float q, r;
 
-	if (u <= 0) {
-		return -HUGE_VAL;
-	}
-	else if (u < UNIFORM_LOW) {
-		q = sqrt(-2 * log(u));
-		return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
-			((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
-	}
-	else if (u <= UNIFORM_HIGH) {
+    if (u <= 0) {
+        return -HUGE_VAL;
+    }
+    else if (u < UNIFORM_LOW) {
+        q = sqrt(-2 * log(u));
+        return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+            ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+    }
+    else if (u <= UNIFORM_HIGH) {
         q = u - 0.5;
         r = q * q;
         
         return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q /
             (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
-	}
-	else if (u < 1) {
-		q  = sqrt(-2 * log(1 - u));
+    }
+    else if (u < 1) {
+        q  = sqrt(-2 * log(1 - u));
 
-		return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
-			((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
-	}
-	else {
-		return HUGE_VAL;
-	}
+        return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+            ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+    }
+    else {
+        return HUGE_VAL;
+    }
 }
 
 inline ulong pcg32Random(global ulong *randomState, global ulong *randomIncrement, int x) {
@@ -126,20 +126,139 @@ inline float gaussianRand(
 }
 
 /**
+ * Complex math stuff
+ */
+
+ inline float2 cmul(float2 a, float2 b) {
+    return (float2)( a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);
+ }
+
+ inline float2 csquare(float2 z) {
+    return (float2)( z.x * z.x - z.y * z.y, 2 * z.y * z.x);
+ }
+
+ inline float cnorm2(float2 z) {
+    return z.x * z.x + z.y * z.y;
+ }
+
+ inline float cnorm(float2 z) {
+    return sqrt(cnorm2(z));
+ }
+
+ inline float cdot(float2 a, float2 b) {
+    return a.x * b.x + a.y * b.y;
+ }
+
+/**
+ * Coordinate transformations
+ */
+
+typedef struct ViewSettings {
+    float scaleX, scaleY;
+    float centerX, centerY;
+    float theta, sinTheta, cosTheta;
+    int sizeX, sizeY;
+} ViewSettings;
+
+inline float2 rotateCoords(float2 coords, ViewSettings view) {
+    return (float2) {
+        view.cosTheta * coords.x + view.sinTheta * coords.y,
+        view.sinTheta * coords.x - view.cosTheta * coords.y
+    };
+}
+
+inline int2 screenToPixel(float2 screenCoord, ViewSettings view) {
+    return (int2) {
+        (1 + screenCoord.x) / 2 * view.sizeX,
+        (1 + screenCoord.y) / 2 * view.sizeY
+    };
+}
+
+inline float2 screenToFractal(float2 screenCoord, ViewSettings view) {
+    float2 tmp = rotateCoords((float2){
+        tmp.x * view.scaleX,
+        tmp.y * view.scaleY
+    }, view);
+
+    return (float2){
+        tmp.x + view.centerX,
+        tmp.y + view.centerY
+    };
+}
+
+inline float2 pixelToScreen(int2 pixelCoord, ViewSettings view) {
+    return (float2) {
+        (2. * pixelCoord.x) / view.sizeX - 1.,
+        (2. * pixelCoord.y) / view.sizeY - 1.
+    };
+}
+
+ inline float2 pixelToFractal(int2 pixelCoord, ViewSettings view) {
+    return screenToFractal(pixelToScreen(pixelCoord, view), view);
+ }
+
+/**
  * Kernels
  */
 
-__kernel void renderImage(
-	global unsigned int *data)
-{
-	const int x = get_global_id(0);
-	const int y = get_global_id(1);
-	
-	const int W = get_global_size(0);
-	
-	int index = (W * y + x);
+ typedef struct Particle {
+    float2 pos, offset;
+    unsigned int iterCount;
+} Particle;
 
-	for (int i = 0; i < 3; i++) {
-		data[3 * index + i] = 0.5 * 4294967295;
-	}
+__kernel void initParticles(global Particle *particles, ViewSettings view) {
+    const size_t x = get_global_id(0);
+    const size_t y = get_global_id(1);
+    const size_t W = get_global_size(0);
+    
+    size_t gid = (W * y + x);
+
+    float2 offset = pixelToFractal((int2){x, y}, view);
+
+    particles[gid].pos = offset;
+    particles[gid].offset = offset;
+    particles[gid].iterCount = 1;
+}
+
+__kernel void mandelStep(global Particle *particles, unsigned int stepCount) {
+    const size_t x = get_global_id(0);
+    const size_t y = get_global_id(1);
+    const size_t W = get_global_size(0);
+
+    size_t gid = (W * y + x);
+
+    Particle tmp = particles[gid];
+
+    for (size_t i = 0; i < stepCount; i++) {
+        if (cnorm2(tmp.pos) > 4.) {
+            break;
+        }
+
+        tmp.pos = csquare(tmp.pos) + tmp.offset;
+        tmp.iterCount++;
+    }
+
+    particles[gid] = tmp;
+}
+
+__kernel void renderImage(
+    global Particle *particles,
+    global unsigned int *data
+) {
+    const int x = get_global_id(0);
+    const int y = get_global_id(1);
+    
+    const int W = get_global_size(0);
+    
+    int index = (W * y + x);
+
+    float period = 255;
+    float count = (float)particles[index].iterCount;
+    float ease = clamp(count * 0.01, 0., 1.);
+
+    float phase = count / 256.;
+
+    data[3 * index] = ease * pown(cos(phase), 2) * 4294967295;
+    data[3 * index + 1] = ease * pown(sin(phase), 2) * 4294967295;
+    data[3 * index + 2] = ease * pown(cos(phase + M_1_PI * 0.25), 2) * 4294967295;
 }

@@ -4,6 +4,12 @@
 #include "config.hpp"
 #include "opencl.hpp"
 
+typedef struct Particle {
+    cl_float2 pos, offsert;
+    cl_float2 offset;
+    unsigned int iterCount;
+} Particle;
+
 typedef struct WindowSettings {
     uint32_t width, height;
     uint32_t windowW, windowH;

@@ -31,6 +31,7 @@ uint64_t *initState, *initSeq;
 vector<BufferSpec> bufferSpecs;
 void createBufferSpecs() {
     bufferSpecs = {
+        {"particles", {NULL, config->width * config->height * sizeof(Particle)}},
         {"image",     {NULL, 3 * config->width * config->height * sizeof(uint32_t)}},
 
         {"randomState",     {NULL, config->particle_count * sizeof(uint64_t)}},
@@ -43,8 +44,10 @@ void createBufferSpecs() {
 vector<KernelSpec> kernelSpecs;
 void createKernelSpecs() {
     kernelSpecs = {
-        {"renderImage", {NULL, 2, {config->width, config->height}, {0, 0}, "renderImage"}},
-        {"seedNoise",   {NULL, 1, {config->particle_count, 0}, {0, 0}, "seedNoise"}},
+        {"seedNoise",     {NULL, 2, {config->width, config->height}, {0, 0}, "seedNoise"}},
+        {"initParticles", {NULL, 2, {config->width, config->height}, {0, 0}, "initParticles"}},
+        {"mandelStep",    {NULL, 2, {config->width, config->height}, {0, 0}, "mandelStep"}},
+        {"renderImage",   {NULL, 2, {config->width, config->height}, {0, 0}, "renderImage"}},
     };
 }
 
@@ -53,8 +56,15 @@ void setKernelArgs() {
     opencl->setKernelBufferArg("seedNoise", 1, "randomIncrement");
     opencl->setKernelBufferArg("seedNoise", 2, "initState");
     opencl->setKernelBufferArg("seedNoise", 3, "initSeq");
+    
+    opencl->setKernelBufferArg("initParticles", 0, "particles");
+    opencl->setKernelArg("initParticles", 1, sizeof(ViewSettings), &(viewMain));
 
-    opencl->setKernelBufferArg("renderImage", 0, "image");
+    opencl->setKernelBufferArg("mandelStep", 0, "particles");
+    opencl->setKernelArg("mandelStep", 1, sizeof(uint32_t), &(config->steps));
+
+    opencl->setKernelBufferArg("renderImage", 0, "particles");
+    opencl->setKernelBufferArg("renderImage", 1, "image");
 }
 
 void initPcg() {
@@ -87,6 +97,8 @@ void prepareOpenCl() {
 
     setKernelArgs();
     initPcg();
+
+    opencl->step("initParticles");
 }
 
 void prepare() {
@@ -117,7 +129,8 @@ void display() {
     
     displayMain();
 
-    opencl->step("renderImage", config->steps);
+    opencl->step("mandelStep");
+    opencl->step("renderImage");
     opencl->readBuffer("image", pixelsMain);
 
     chrono::high_resolution_clock::time_point temp = chrono::high_resolution_clock::now();
