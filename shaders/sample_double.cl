@@ -173,6 +173,14 @@ IntPair sub_intpair(IntPair a, IntPair b) {
     return add_intpair(a, b);
 }
 
+// Subtraction
+IntPair sub_intpair_int(IntPair a, int b) {
+    a.sign = !a.sign;
+    IntPair result = add_intpair_int(b, a);
+    result.sign = !result.sign;
+    return result;
+}
+
 // Multiplication
 // Assumes a,b < 256
 IntPair mul_intpair(IntPair a, IntPair b) {
@@ -266,30 +274,6 @@ return mul_intpair(square_intpair(z.x), square_intpair(z.y));
 //  }
 
 /**
- * Complex math stuff
- */
-
- inline float2 cmul(float2 a, float2 b) {
-    return (float2)(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);
- }
-
- inline float2 csquare(float2 z) {
-    return (float2)( z.x * z.x - z.y * z.y, 2 * z.y * z.x);
- }
-
- inline float cnorm2(float2 z) {
-    return z.x * z.x + z.y * z.y;
- }
-
- inline float cnorm(float2 z) {
-    return sqrt(cnorm2(z));
- }
-
- inline float cdot(float2 a, float2 b) {
-    return a.x * b.x + a.y * b.y;
- }
-
-/**
  * Checks
  */
 
@@ -356,39 +340,42 @@ inline bool isValid(ComplexDouble coord) {
  */
 
 typedef struct ViewSettings {
-    float scaleX, scaleY;
-    float centerX, centerY;
-    float theta, sinTheta, cosTheta;
-    int sizeX, sizeY;
+    IntPair scaleX, scaleY;
+    IntPair centerX, centerY;
+    IntPair theta, sinTheta, cosTheta;
+    ulong sizeX, sizeY;
 } ViewSettings;
 
-inline float2 rotateCoords(float2 coords, ViewSettings view) {
-    return (float2) {
-         view.cosTheta * coords.x + view.sinTheta * coords.y,
-        -view.sinTheta * coords.x + view.cosTheta * coords.y
+inline ComplexDouble rotateCoords(ComplexDouble coords, ViewSettings view) {
+    IntPair tmp = mul_intpair(view.sinTheta, coords.x);
+    tmp.sign = !tmp.sign;
+
+    return (ComplexDouble) {
+        add_intpair(mul_intpair(view.cosTheta, coords.x), mul_intpair(view.sinTheta, coords.y)),
+        add_intpair(tmp,                                  mul_intpair(view.cosTheta, coords.y))
     };
 }
 
-inline float2 screenToFractal(float2 screenCoord, ViewSettings view) {
-    float2 tmp = rotateCoords((float2){
-        screenCoord.x * view.scaleX,
-        screenCoord.y * view.scaleY
+inline ComplexDouble screenToFractal(ComplexDouble screenCoord, ViewSettings view) {
+    ComplexDouble tmp = rotateCoords((ComplexDouble){
+        mul_intpair(screenCoord.x, view.scaleX),
+        mul_intpair(screenCoord.y, view.scaleY)
     }, view);
 
-    return (float2){
-        tmp.x + view.centerX,
-        tmp.y + view.centerY
+    return (ComplexDouble){
+        mul_intpair(tmp.x, view.centerX),
+        mul_intpair(tmp.y, view.centerY)
     };
 }
 
-inline float2 pixelToScreen(int2 pixelCoord, ViewSettings view) {
-    return (float2) {
-        (2. * pixelCoord.x) / (float)view.sizeX - 1.,
-        (2. * pixelCoord.y) / (float)view.sizeY - 1.
+inline ComplexDouble pixelToScreen(ulong2 pixelCoord, ViewSettings view) {
+    return (ComplexDouble) {
+        div_ints((2 * pixelCoord.x), view.sizeX),
+        div_ints((2 * pixelCoord.y), view.sizeY)
     };
 }
 
- inline float2 pixelToFractal(int2 pixelCoord, ViewSettings view) {
+ inline ComplexDouble pixelToFractal(ulong2 pixelCoord, ViewSettings view) {
     return screenToFractal(pixelToScreen(pixelCoord, view), view);
  }
 
@@ -409,7 +396,7 @@ __kernel void initParticles(global Particle *particles, ViewSettings view) {
     
     size_t gid = (W * y + x);
 
-    float2 offset = pixelToFractal((int2){x, y}, view);
+    ComplexDouble offset = pixelToFractal((ulong){x, y}, view);
 
     particles[gid].pos = offset;
     particles[gid].offset = offset;
