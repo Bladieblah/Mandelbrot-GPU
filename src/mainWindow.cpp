@@ -53,6 +53,55 @@ void drawBox() {
     glEnd();
 }
 
+void drawPath() {
+    ScreenCoordinate screen({mouseMain.x, mouseMain.y});
+    WorldCoordinate fractal = screen.toPixel(settingsMain).toWorld(viewMain);
+    WorldCoordinate dzx({1, 0});
+    WorldCoordinate dzy({0, 1});
+    WorldCoordinate offset(fractal);
+    
+    glPointSize(2);
+    glEnable(GL_POINT_SMOOTH);
+    
+    glBegin(GL_POINTS);
+    glColor3f(1, 0, 1);
+
+    glVertex2f(
+        2 * fractal.toPixel(defaultView).x / (float)viewMain.sizeX - 1,
+        2 * fractal.toPixel(defaultView).y / (float)viewMain.sizeY - 1
+    );
+
+    for (int i = 0; i < 20000; i++) {
+        dzx = 2 * complex_mul(fractal, dzx) + WorldCoordinate({1, 0});
+        dzy = 2 * complex_mul(fractal, dzy) + WorldCoordinate({0, 1});
+        fractal = complex_square(fractal) + offset;
+
+        glColor3f(1, 0, 1);
+        glVertex2f(
+            2 * fractal.toPixel(defaultView).toScreen(settingsMain).x / (float)viewMain.sizeX - 1,
+            2 * fractal.toPixel(defaultView).toScreen(settingsMain).y / (float)viewMain.sizeY - 1
+        );
+
+        glColor3f(1, 0, 0);
+        glVertex2f(
+            2 * (fractal + 0.1 * dzx).toPixel(defaultView).toScreen(settingsMain).x / (float)viewMain.sizeX - 1,
+            2 * (fractal + 0.1 * dzx).toPixel(defaultView).toScreen(settingsMain).y / (float)viewMain.sizeY - 1
+        );
+
+        glColor3f(0, 1, 1);
+        glVertex2f(
+            2 * (fractal + 0.1 * dzy).toPixel(defaultView).toScreen(settingsMain).x / (float)viewMain.sizeX - 1,
+            2 * (fractal + 0.1 * dzy).toPixel(defaultView).toScreen(settingsMain).y / (float)viewMain.sizeY - 1
+        );
+
+        if ((fractal.x * fractal.x + fractal.y * fractal.y) > 16) {
+            break;
+        }   
+    }
+
+    glEnd();
+}
+
 void displayMain() {
     glutSetWindow(windowIdMain);
 
@@ -88,13 +137,9 @@ void displayMain() {
 
     glDisable (GL_TEXTURE_2D);
 
-    glPointSize(2);
-    glColor3f(1, 1, 1);
-    glEnable(GL_POINT_SMOOTH);
-    
-    glBegin(GL_POINTS);
-
-    glEnd();
+    if (mouseMain.state == GLUT_DOWN && !selecting) {
+        drawPath();
+    }
 
     glPopMatrix();
 

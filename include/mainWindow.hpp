@@ -35,7 +35,7 @@ void displayMain();
 void createMainWindow(char *name, uint32_t width, uint32_t height);
 void destroyMainWindow();
 
-extern ViewSettings viewMain;
+extern ViewSettings viewMain, defaultView;
 extern WindowSettings settingsMain;
 extern uint32_t *pixelsMain;
 extern OpenCl *opencl;
