@@ -125,30 +125,6 @@ inline float gaussianRand(
     return inverseNormalCdf(uniformRand(randomState, randomIncrement, x));
 }
 
-/**
- * Complex math stuff
- */
-
- inline float2 cmul(float2 a, float2 b) {
-    return (float2)(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);
- }
-
- inline float2 csquare(float2 z) {
-    return (float2)( z.x * z.x - z.y * z.y, 2 * z.y * z.x);
- }
-
- inline float cnorm2(float2 z) {
-    return z.x * z.x + z.y * z.y;
- }
-
- inline float cnorm(float2 z) {
-    return sqrt(cnorm2(z));
- }
-
- inline float cdot(float2 a, float2 b) {
-    return a.x * b.x + a.y * b.y;
- }
-
  /**
   * Double precision stuff 
   */
@@ -198,6 +174,30 @@ IntPair mul_intpair(IntPair a, IntPair b) {
     return result;
 }
 
+// Multiplication
+// Assumes a < 256
+IntPair square_intpair(IntPair a) {
+    IntPair result;
+    
+    result.sign = true;
+    result.integ = a.integ * a.integ + (a.integ * (a.fract >> 8) >> 55);
+    result.fract = 2 * a.integ * a.fract + (((a.fract >> 32) * (a.fract >> 32))) + (((a.fract & (~0ull >> 32)) * (a.fract >> 32)) >> 31);
+    
+    return result;
+}
+
+// Multiplication
+// Assumes a,b < 256
+IntPair mul_intpair_int(ulong a, IntPair b) {
+    IntPair result;
+    
+    result.sign = b.sign;
+    result.integ = a * b.integ + (a * (b.fract >> 8) >> 56);
+    result.fract = a * b.fract;
+    
+    return result;
+}
+
 // Division
 // Assumes a%b < 2^14
 IntPair div_ints(ulong a, ulong b) {
@@ -209,48 +209,60 @@ IntPair div_ints(ulong a, ulong b) {
     return result;
 }
 
-double to_double(IntPair num) {
-    return (num.sign ? 1 : -1) * num.integ + (((double)num.fract) / (~0ULL));
-}
-
-IntPair to_pair(double num) {
-    return (IntPair){
-        num > 0, (ulong)num, (ulong)((num - (ulong)num) * (~0ULL))
-    };
-}
-
 
 /**
  * Complex double math stuff
  */
 
-// typedef struct {
-//     IntPair x, y;
-// } ComplexDouble;
+typedef struct {
+    IntPair x, y;
+} ComplexDouble;
 
-//  inline ComplexDouble cmuld(ComplexDouble a, ComplexDouble b) {
-//     return (ComplexDouble){
-//         sub_intpair(mul_intpair(a.x, b.x), mul_intpair(a.y, b.y)), 
-//         add_intpair(mul_intpair(a.x, b.y), mul_intpair(a.y, b.x))
-//     };
-//  }
+ inline ComplexDouble cmuld(ComplexDouble a, ComplexDouble b) {
+    return (ComplexDouble){
+        sub_intpair(mul_intpair(a.x, b.x), mul_intpair(a.y, b.y)), 
+        add_intpair(mul_intpair(a.x, b.y), mul_intpair(a.y, b.x))
+    };
+ }
 
-//  inline ComplexDouble csquared(ComplexDouble z) {
-//     FloatPair two = {2., 0.};
+ inline ComplexDouble csquared(ComplexDouble z) {
+    return (ComplexDouble){
+        sub_intpair(square_intpair(z.x), square_intpair(z.y)),
+        mul_intpair_int(2, mul_intpair(z.y, z.x))
+    };
+ }
 
-//     return (ComplexDouble){
-//         sub(square(z.x), square(z.y)),
-//         mul(two, mul(z.y, z.x))
-//     };
-//  }
-
-//  inline FloatPair cnorm2d(ComplexDouble z) {
-//     return add(square(z.x), square(z.y));
-//  }
+ inline IntPair cnorm2d(ComplexDouble z) {
+    return mul_intpair(square_intpair(z.x), square_intpair(z.y));
+ }
 
 //  inline float cdotd(float2 a, float2 b) {
 //     return a.x * b.x + a.y * b.y;
 //  }
+
+/**
+ * Complex math stuff
+ */
+
+ inline float2 cmul(float2 a, float2 b) {
+    return (float2)(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);
+ }
+
+ inline float2 csquare(float2 z) {
+    return (float2)( z.x * z.x - z.y * z.y, 2 * z.y * z.x);
+ }
+
+ inline float cnorm2(float2 z) {
+    return z.x * z.x + z.y * z.y;
+ }
+
+ inline float cnorm(float2 z) {
+    return sqrt(cnorm2(z));
+ }
+
+ inline float cdot(float2 a, float2 b) {
+    return a.x * b.x + a.y * b.y;
+ }
 
 /**
  * Checks
@@ -289,23 +301,23 @@ inline bool isValid(float2 coord) {
     coord.y = fabs(coord.y);
 
     // 2-step bulbs
-    if (cnorm2(coord - CENTER_1) < RADIUS_1 * RADIUS_1) {
+    if (cnorm(coord - CENTER_1) < RADIUS_1) {
         return false;
     }
 
     // 3-step bulbs
-    if (cnorm2(coord - CENTER_2) < RADIUS_3 * RADIUS_3) {
+    if (cnorm(coord - CENTER_2) < RADIUS_3) {
         return false;
     }
-    if (cnorm2(coord - CENTER_3) < RADIUS_3 * RADIUS_3) {
+    if (cnorm(coord - CENTER_3) < RADIUS_3) {
         return false;
     }
 
     // 4-step bulbs
-    if (cnorm2(coord - CENTER_4) < RADIUS_4 * RADIUS_4) {
+    if (cnorm(coord - CENTER_4) < RADIUS_4) {
         return false;
     }
-    if (cnorm2(coord - CENTER_5) < RADIUS_5 * RADIUS_5) {
+    if (cnorm(coord - CENTER_5) < RADIUS_5) {
         return false;
     }
 
@@ -320,7 +332,7 @@ typedef struct ViewSettings {
     float scaleX, scaleY;
     float centerX, centerY;
     float theta, sinTheta, cosTheta;
-    ulong sizeX, sizeY;
+    int sizeX, sizeY;
 } ViewSettings;
 
 inline float2 rotateCoords(float2 coords, ViewSettings view) {
@@ -342,14 +354,14 @@ inline float2 screenToFractal(float2 screenCoord, ViewSettings view) {
     };
 }
 
-inline float2 pixelToScreen(ulong2 pixelCoord, ViewSettings view) {
+inline float2 pixelToScreen(int2 pixelCoord, ViewSettings view) {
     return (float2) {
         (2. * pixelCoord.x) / (float)view.sizeX - 1.,
         (2. * pixelCoord.y) / (float)view.sizeY - 1.
     };
 }
 
- inline float2 pixelToFractal(ulong2 pixelCoord, ViewSettings view) {
+ inline float2 pixelToFractal(int2 pixelCoord, ViewSettings view) {
     return screenToFractal(pixelToScreen(pixelCoord, view), view);
  }
 
@@ -370,7 +382,7 @@ __kernel void initParticles(global Particle *particles, ViewSettings view) {
     
     size_t gid = (W * y + x);
 
-    float2 offset = pixelToFractal((ulong2){x, y}, view);
+    float2 offset = pixelToFractal((int2){x, y}, view);
 
     particles[gid].pos = offset;
     particles[gid].offset = offset;
