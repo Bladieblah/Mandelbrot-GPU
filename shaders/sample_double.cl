@@ -130,7 +130,7 @@ inline float gaussianRand(
   */
 
 typedef struct IntPair {
-    bool sign;
+    uint sign;
     ulong integ;
     ulong fract;
 } IntPair;
@@ -268,10 +268,6 @@ return (ComplexDouble){
 inline IntPair cnorm2d(ComplexDouble z) {
 return mul_intpair(square_intpair(z.x), square_intpair(z.y));
 }
-
-//  inline float cdotd(float2 a, float2 b) {
-//     return a.x * b.x + a.y * b.y;
-//  }
 
 /**
  * Checks

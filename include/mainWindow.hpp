@@ -6,7 +6,7 @@
 
 #ifdef USE_DOUBLE
 typedef struct IntPair {
-    bool sign;
+    unsigned int sign;
     unsigned long integ;
     unsigned long fract;
 } IntPair;

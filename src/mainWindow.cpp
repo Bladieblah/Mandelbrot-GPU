@@ -324,7 +324,7 @@ void destroyMainWindow() {
 
 IntPair to_pair(double num) {
     return (IntPair){
-        num > 0, (uint64_t)num, (uint64_t)((num - (uint64_t)num) * (~0ULL))
+        (unsigned int)(num > 0), (uint64_t)num, (uint64_t)((num - (uint64_t)num) * (~0ULL))
     };
 }
 
