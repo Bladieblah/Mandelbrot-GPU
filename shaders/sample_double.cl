@@ -384,7 +384,7 @@ inline ComplexDouble pixelToScreen(ulong2 pixelCoord, ViewSettings view) {
  */
 
  typedef struct Particle {
-    float2 pos, offset;
+    ComplexDouble pos, offset;
     unsigned int iterCount;
     bool escaped;
 } Particle;
@@ -418,12 +418,12 @@ __kernel void mandelStep(global Particle *particles, unsigned int stepCount) {
     }
 
     for (size_t i = 0; i < stepCount; i++) {
-        if (cnorm2(tmp.pos) > 4.) {
+        if (cnorm2d(tmp.pos).integ > 4ULL) {
             tmp.escaped = true;
             break;
         }
 
-        tmp.pos = csquare(tmp.pos) + tmp.offset;
+        tmp.pos = add_complex(csquared(tmp.pos), tmp.offset);
         tmp.iterCount++;
     }
 
