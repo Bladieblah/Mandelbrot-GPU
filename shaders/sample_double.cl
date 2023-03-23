@@ -144,12 +144,13 @@ bool ipgt(IntPair x0, IntPair x1) {
 IntPair add_intpair(IntPair a, IntPair b) {
     ulong new_fra = a.fract + b.fract;
     ulong new_int = a.integ + b.integ + (int)((new_fra < a.fract || new_fra < b.fract));
-    
+    bool new_sign = a.sign;
+
     bool is_larger = ipgt(a, b);
     
     new_fra  = a.sign == b.sign ? new_fra  : (is_larger ? a.fract - b.fract : b.fract - a.fract);
     new_int  = a.sign == b.sign ? new_int  : (is_larger ? a.integ - b.integ - (int)(new_fra > a.fract) : b.integ - a.integ - (int)(new_fra > b.fract));
-    bool new_sign = a.sign == b.sign ? a.sign : (is_larger ? a.sign : b.sign);
+    new_sign = a.sign == b.sign ? new_sign : (is_larger ? a.sign : b.sign);
     
     return (IntPair){new_sign, new_int, new_fra};
 }
@@ -157,12 +158,13 @@ IntPair add_intpair(IntPair a, IntPair b) {
 IntPair add_intpair_int(ulong a, IntPair b) {
     ulong new_fra = b.fract;
     ulong new_int = a + b.integ + (int)((new_fra < b.fract));
+    bool new_sign = true;
     
     bool is_larger = a > b.integ;
     
-    new_fra       = b.sign ? new_fra : (is_larger ? -b.fract : b.fract);
-    new_int       = b.sign ? new_int : (is_larger ? a - b.integ - (int)(new_fra > 0) : b.integ - a - (int)(new_fra > b.fract));
-    bool new_sign = b.sign ? true  : (is_larger ? true : b.sign);
+    new_fra  = b.sign ? new_fra   : (is_larger ? -b.fract : b.fract);
+    new_int  = b.sign ? new_int   : (is_larger ? a - b.integ - (int)(new_fra > 0) : b.integ - a - (int)(new_fra > b.fract));
+    new_sign = b.sign ? new_sign  : (is_larger ? true : b.sign);
     
     return (IntPair){new_sign, new_int, new_fra};
 }
@@ -188,7 +190,7 @@ IntPair mul_intpair(IntPair a, IntPair b) {
     
     result.sign = a.sign == b.sign;
     result.integ = a.integ * b.integ + (a.integ * (b.fract >> 8) >> 56) + (b.integ * (a.fract >> 8) >> 56);
-    result.fract = a.integ * b.fract + b.integ * a.fract + (((a.fract >> 32) * (b.fract >> 32))) + (((a.fract & (~0ull >> 32)) * (b.fract >> 32)) >> 32) + (((b.fract & (~0ull >> 32)) * (a.fract >> 32)) >> 32);
+    result.fract = a.integ * b.fract + b.integ * a.fract + (((a.fract >> 32) * (b.fract >> 32))) + (((a.fract & (~0UL >> 32)) * (b.fract >> 32)) >> 32) + (((b.fract & (~0UL >> 32)) * (a.fract >> 32)) >> 32);
     
     return result;
 }
@@ -200,7 +202,7 @@ IntPair square_intpair(IntPair a) {
     
     result.sign = true;
     result.integ = a.integ * a.integ + (a.integ * (a.fract >> 8) >> 55);
-    result.fract = 2 * a.integ * a.fract + (((a.fract >> 32) * (a.fract >> 32))) + (((a.fract & (~0ull >> 32)) * (a.fract >> 32)) >> 31);
+    result.fract = 2 * a.integ * a.fract + (((a.fract >> 32) * (a.fract >> 32))) + (((a.fract & (~0UL >> 32)) * (a.fract >> 32)) >> 31);
     
     return result;
 }
@@ -252,21 +254,21 @@ inline ComplexDouble sub_complex(ComplexDouble a, ComplexDouble b) {
 }
 
 inline ComplexDouble cmuld(ComplexDouble a, ComplexDouble b) {
-return (ComplexDouble){
-    sub_intpair(mul_intpair(a.x, b.x), mul_intpair(a.y, b.y)), 
-    add_intpair(mul_intpair(a.x, b.y), mul_intpair(a.y, b.x))
-};
+    return (ComplexDouble){
+        sub_intpair(mul_intpair(a.x, b.x), mul_intpair(a.y, b.y)), 
+        add_intpair(mul_intpair(a.x, b.y), mul_intpair(a.y, b.x))
+    };
 }
 
 inline ComplexDouble csquared(ComplexDouble z) {
-return (ComplexDouble){
-    sub_intpair(square_intpair(z.x), square_intpair(z.y)),
-    mul_intpair_int(2, mul_intpair(z.y, z.x))
-};
+    return (ComplexDouble){
+        sub_intpair(square_intpair(z.x), square_intpair(z.y)),
+        mul_intpair_int(2, mul_intpair(z.y, z.x))
+    };
 }
 
 inline IntPair cnorm2d(ComplexDouble z) {
-return mul_intpair(square_intpair(z.x), square_intpair(z.y));
+    return mul_intpair(square_intpair(z.x), square_intpair(z.y));
 }
 
 /**
@@ -289,7 +291,7 @@ inline bool isValid(ComplexDouble coord) {
     IntPair c2 = cnorm2d(coord);
     IntPair a = coord.x;
 
-    if (c2.integ >= 4) {
+    if (c2.integ >= 4UL) {
         return false;
     }
     
@@ -375,14 +377,14 @@ inline ComplexDouble pixelToScreen(ulong2 pixelCoord, ViewSettings view) {
     return screenToFractal(pixelToScreen(pixelCoord, view), view);
  }
 
-/**
- * Kernels
- */
+// /**
+//  * Kernels
+//  */
 
 typedef struct Particle {
     ComplexDouble pos, offset;
     unsigned int iterCount;
-    bool escaped;
+    int escaped;
 } Particle;
 
 __kernel void initParticles(global Particle *particles, ViewSettings view) {
@@ -432,19 +434,18 @@ __kernel void renderImage(
 ) {
     const int x = get_global_id(0);
     const int y = get_global_id(1);
-    
+
     const int W = get_global_size(0);
-    
+
     int index = (W * y + x);
 
-    if (!particles[index].escaped) {
-        data[3 * index] = 0;
-        data[3 * index + 1] = 0;
-        data[3 * index + 2] = 0;
-        return;
-    }
+    // if (!particles[index].escaped) {
+    //     data[3 * index] = 0;
+    //     data[3 * index + 1] = 0;
+    //     data[3 * index + 2] = 0;
+    //     return;
+    // }
 
-    float period = 255;
     float count = (float)particles[index].iterCount;
     float ease = clamp(count * 0.01, 0., 1.);
 

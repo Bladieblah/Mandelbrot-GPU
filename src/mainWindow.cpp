@@ -17,9 +17,12 @@ uint32_t *pixelsMain;
 WindowSettings settingsMain;
 MouseState mouseMain;
 ViewSettings viewMain, defaultView;
-ViewSettingsCL viewMainCL;
 std::stack<ViewSettings> viewStackMain;
 bool selecting = true;
+
+#ifdef USE_DOUBLE
+ViewSettingsCL viewMainCL;
+#endif
 
 void drawGrid() {
     glBegin(GL_LINES);
@@ -165,9 +168,13 @@ void updateView() {
     viewMain.scaleX = viewMain.scaleY / config->height * config->width;
     viewMain.cosTheta = cos(viewMain.theta);
     viewMain.sinTheta = sin(viewMain.theta);
-
+    
+#ifdef USE_DOUBLE
     transformView();
     opencl->setKernelArg("initParticles", 1, sizeof(ViewSettingsCL), &(viewMainCL));
+#else
+    opencl->setKernelArg("initParticles", 1, sizeof(ViewSettings), &(viewMain));
+#endif
     opencl->step("initParticles");
 }
 
@@ -217,8 +224,12 @@ void keyPressedMain(unsigned char key, int x, int y) {
             if (!viewStackMain.empty()) {
                 viewMain = viewStackMain.top();
                 viewStackMain.pop();
+#ifdef USE_DOUBLE
                 transformView();
                 opencl->setKernelArg("initParticles", 1, sizeof(ViewSettingsCL), &(viewMainCL));
+#else
+                opencl->setKernelArg("initParticles", 1, sizeof(ViewSettings), &(viewMain));
+#endif
                 opencl->step("initParticles");
             }
             break;
@@ -322,6 +333,7 @@ void destroyMainWindow() {
     free(pixelsMain);
 }
 
+#ifdef USE_DOUBLE
 IntPair to_pair(double num) {
     return (IntPair){
         (unsigned int)(num > 0), (uint64_t)num, (uint64_t)((num - (uint64_t)num) * (~0ULL))
@@ -339,3 +351,5 @@ void transformView() {
     viewMainCL.sizeX = viewMain.sizeX;
     viewMainCL.sizeY = viewMain.sizeY;
 }
+#endif
+

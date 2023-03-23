@@ -34,6 +34,7 @@ typedef struct ViewSettingsCL {
     IntPair theta, sinTheta, cosTheta;
     unsigned long sizeX, sizeY;
 } ViewSettingsCL;
+extern ViewSettingsCL viewMainCL;
 #else
 typedef struct Particle {
     cl_float2 pos, offset;
@@ -69,7 +70,6 @@ void destroyMainWindow();
 void transformView();
 
 extern ViewSettings viewMain, defaultView;
-extern ViewSettingsCL viewMainCL;
 extern WindowSettings settingsMain;
 extern uint32_t *pixelsMain;
 extern OpenCl *opencl;

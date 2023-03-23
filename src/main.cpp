@@ -58,7 +58,12 @@ void setKernelArgs() {
     opencl->setKernelBufferArg("seedNoise", 3, "initSeq");
     
     opencl->setKernelBufferArg("initParticles", 0, "particles");
+#ifdef USE_DOUBLE
+    transformView();
     opencl->setKernelArg("initParticles", 1, sizeof(ViewSettingsCL), &(viewMainCL));
+#else
+opencl->setKernelArg("initParticles", 1, sizeof(ViewSettings), &(viewMain));
+#endif
 
     opencl->setKernelBufferArg("mandelStep", 0, "particles");
     opencl->setKernelArg("mandelStep", 1, sizeof(uint32_t), &(config->steps));
@@ -111,6 +116,7 @@ void prepare() {
     initState = (uint64_t *)malloc(config->particle_count * sizeof(uint64_t));
     initSeq = (uint64_t *)malloc(config->particle_count * sizeof(uint64_t));
 
+    #ifdef USE_DOUBLE
     double scaleY = 1.3;
     viewMain = {
         scaleY / (double)config->height * (double)config->width, scaleY,
@@ -118,9 +124,17 @@ void prepare() {
         0., 0., 1.,
         (unsigned long)config->width, (unsigned long)config->height
     };
+    #else
+    float scaleY = 1.3;
+    viewMain = {
+        scaleY / (float)config->height * (float)config->width, scaleY,
+        -0.5, 0.,
+        0., 0., 1.,
+        (int)config->width, (int)config->height
+    };
+    #endif
 
     defaultView = viewMain;
-    transformView();
 
     prepareOpenCl();
 }

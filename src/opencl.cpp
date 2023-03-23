@@ -83,6 +83,7 @@ void OpenCl::prepare(vector<BufferSpec> bufferSpecs, vector<KernelSpec> kernelSp
 
     // Create kernels
     for (KernelSpec kernelSpec : kernelSpecs) {
+        fprintf(stderr, "Creating kernel %s\n", kernelSpec.kernel.name.c_str());
         kernelSpec.kernel.kernel = clCreateKernel(program, kernelSpec.kernel.name.c_str(), &ret);
 
         if (ret != CL_SUCCESS)
