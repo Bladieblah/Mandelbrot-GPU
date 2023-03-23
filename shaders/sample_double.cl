@@ -142,8 +142,6 @@ bool ipgt(IntPair x0, IntPair x1) {
 }
 
 IntPair add_intpair(IntPair a, IntPair b) {
-    IntPair result;
-
     ulong new_fra = a.fract + b.fract;
     ulong new_int = a.integ + b.integ + (int)((new_fra < a.fract || new_fra < b.fract));
     
@@ -152,6 +150,19 @@ IntPair add_intpair(IntPair a, IntPair b) {
     new_fra  = a.sign == b.sign ? new_fra  : (is_larger ? a.fract - b.fract : b.fract - a.fract);
     new_int  = a.sign == b.sign ? new_int  : (is_larger ? a.integ - b.integ - (int)(new_fra > a.fract) : b.integ - a.integ - (int)(new_fra > b.fract));
     bool new_sign = a.sign == b.sign ? a.sign : (is_larger ? a.sign : b.sign);
+    
+    return (IntPair){new_sign, new_int, new_fra};
+}
+
+IntPair add_intpair_int(ulong a, IntPair b) {
+    ulong new_fra = b.fract;
+    ulong new_int = a + b.integ + (int)((new_fra < b.fract));
+    
+    bool is_larger = a > b.integ;
+    
+    new_fra       = b.sign ? new_fra : (is_larger ? -b.fract : b.fract);
+    new_int       = b.sign ? new_int : (is_larger ? a - b.integ - (int)(new_fra > 0) : b.integ - a - (int)(new_fra > b.fract));
+    bool new_sign = b.sign ? true  : (is_larger ? true : b.sign);
     
     return (IntPair){new_sign, new_int, new_fra};
 }
@@ -218,23 +229,37 @@ typedef struct {
     IntPair x, y;
 } ComplexDouble;
 
- inline ComplexDouble cmuld(ComplexDouble a, ComplexDouble b) {
-    return (ComplexDouble){
-        sub_intpair(mul_intpair(a.x, b.x), mul_intpair(a.y, b.y)), 
-        add_intpair(mul_intpair(a.x, b.y), mul_intpair(a.y, b.x))
+inline ComplexDouble add_complex(ComplexDouble a, ComplexDouble b) {
+    return (ComplexDouble) {
+        add_intpair(a.x, b.x),
+        add_intpair(a.y, b.y)
     };
- }
+}
 
- inline ComplexDouble csquared(ComplexDouble z) {
-    return (ComplexDouble){
-        sub_intpair(square_intpair(z.x), square_intpair(z.y)),
-        mul_intpair_int(2, mul_intpair(z.y, z.x))
+inline ComplexDouble sub_complex(ComplexDouble a, ComplexDouble b) {
+    return (ComplexDouble) {
+        sub_intpair(a.x, b.x),
+        sub_intpair(a.y, b.y)
     };
- }
+}
 
- inline IntPair cnorm2d(ComplexDouble z) {
-    return mul_intpair(square_intpair(z.x), square_intpair(z.y));
- }
+inline ComplexDouble cmuld(ComplexDouble a, ComplexDouble b) {
+return (ComplexDouble){
+    sub_intpair(mul_intpair(a.x, b.x), mul_intpair(a.y, b.y)), 
+    add_intpair(mul_intpair(a.x, b.y), mul_intpair(a.y, b.x))
+};
+}
+
+inline ComplexDouble csquared(ComplexDouble z) {
+return (ComplexDouble){
+    sub_intpair(square_intpair(z.x), square_intpair(z.y)),
+    mul_intpair_int(2, mul_intpair(z.y, z.x))
+};
+}
+
+inline IntPair cnorm2d(ComplexDouble z) {
+return mul_intpair(square_intpair(z.x), square_intpair(z.y));
+}
 
 //  inline float cdotd(float2 a, float2 b) {
 //     return a.x * b.x + a.y * b.y;
@@ -268,56 +293,58 @@ typedef struct {
  * Checks
  */
 
-constant float2 CENTER_1 = {-0.1225611668766536, 0.7448617666197446};
-constant float RADIUS_1 = 0.095;
+constant IntPair RADIUS_1 = {true, 0ULL, 166481865265228704ULL};
+constant IntPair RADIUS_3 = {true, 0ULL, 35712896526701688ULL};
+constant IntPair RADIUS_4 = {true, 0ULL, 25253592636908372ULL};
+constant IntPair RADIUS_5 = {true, 0ULL, 9338664187315460ULL};
 
-constant float2 CENTER_2 = {-1.3107026413368228, 0};
-constant float2 CENTER_3 = {0.282271390766914, 0.5300606175785252};
-constant float RADIUS_3 = 0.044;
 
-constant float2 CENTER_4 = {-0.5043401754462431, 0.5627657614529813};
-constant float RADIUS_4 = 0.037;
-constant float2 CENTER_5 = {0.3795135880159236, 0.3349323055974974};
-constant float RADIUS_5 = 0.0225;
+constant ComplexDouble CENTER_1 = {{false, 0ULL, 4334763900ULL},          {true, 0ULL, 13740274379125600256ULL}};
+constant ComplexDouble CENTER_2 = {{false, 0ULL, 4334763900ULL},          {true, 0ULL, 0ULL}};
+constant ComplexDouble CENTER_3 = {{true,  0ULL, 5206988104807323648ULL}, {true, 0ULL, 9777892556023484416ULL}};
+constant ComplexDouble CENTER_4 = {{false, 0ULL, 4334763900ULL},          {true, 0ULL, 10381195974969425920ULL}};
+constant ComplexDouble CENTER_5 = {{true,  0ULL, 7000790030624987136ULL}, {true, 0ULL, 617841052337451212ULL}};
 
-inline bool isValid(float2 coord) {
-    float c2 = cnorm2(coord);
-    float a = coord.x;
+inline bool isValid(ComplexDouble coord) {
+    IntPair c2 = cnorm2d(coord);
+    IntPair a = coord.x;
 
-    if (c2 >= 4) {
+    if (c2.integ >= 4) {
         return false;
     }
     
     // Main bulb
-    if (256.0 * c2 * c2 - 96.0 * c2 + 32.0 * a < 3.0) {
+    IntPair test1 = add_intpair(sub_intpair(mul_intpair_int(256ULL, square_intpair(c2)), mul_intpair_int(96ULL, c2)), mul_intpair_int(32ULL, a));
+    if (test1.integ < 3 || !test1.sign) {
         return false;
     }
 
     // Head
-    if (16.0 * (c2 + 2.0 * a + 1.0) < 1.0) {
+    IntPair test2 = mul_intpair_int(16ULL, add_intpair_int(1ULL, add_intpair(c2, mul_intpair_int(2, a))));
+    if (test2.integ < 1 || !test2.sign) {
         return false;
     }
 
-    coord.y = fabs(coord.y);
+    coord.y.sign = true;
 
     // 2-step bulbs
-    if (cnorm(coord - CENTER_1) < RADIUS_1) {
+    if (ipgt(RADIUS_1, cnorm2d(sub_complex(coord, CENTER_1)))) {
         return false;
     }
 
     // 3-step bulbs
-    if (cnorm(coord - CENTER_2) < RADIUS_3) {
+    if (ipgt(RADIUS_3, cnorm2d(sub_complex(coord, CENTER_2)))) {
         return false;
     }
-    if (cnorm(coord - CENTER_3) < RADIUS_3) {
+    if (ipgt(RADIUS_3, cnorm2d(sub_complex(coord, CENTER_3)))) {
         return false;
     }
 
     // 4-step bulbs
-    if (cnorm(coord - CENTER_4) < RADIUS_4) {
+    if (ipgt(RADIUS_4, cnorm2d(sub_complex(coord, CENTER_4)))) {
         return false;
     }
-    if (cnorm(coord - CENTER_5) < RADIUS_5) {
+    if (ipgt(RADIUS_5, cnorm2d(sub_complex(coord, CENTER_5)))) {
         return false;
     }
 
