@@ -17,6 +17,7 @@ uint32_t *pixelsMain;
 WindowSettings settingsMain;
 MouseState mouseMain;
 ViewSettings viewMain, defaultView;
+ViewSettingsCL viewMainCL;
 std::stack<ViewSettings> viewStackMain;
 bool selecting = true;
 
@@ -165,7 +166,8 @@ void updateView() {
     viewMain.cosTheta = cos(viewMain.theta);
     viewMain.sinTheta = sin(viewMain.theta);
 
-    opencl->setKernelArg("initParticles", 1, sizeof(ViewSettings), &(viewMain));
+    transformView();
+    opencl->setKernelArg("initParticles", 1, sizeof(ViewSettingsCL), &(viewMainCL));
     opencl->step("initParticles");
 }
 
@@ -215,7 +217,8 @@ void keyPressedMain(unsigned char key, int x, int y) {
             if (!viewStackMain.empty()) {
                 viewMain = viewStackMain.top();
                 viewStackMain.pop();
-                opencl->setKernelArg("initParticles", 1, sizeof(ViewSettings), &(viewMain));
+                transformView();
+                opencl->setKernelArg("initParticles", 1, sizeof(ViewSettingsCL), &(viewMainCL));
                 opencl->step("initParticles");
             }
             break;
@@ -317,4 +320,22 @@ void createMainWindow(char *name, uint32_t width, uint32_t height) {
 
 void destroyMainWindow() {
     free(pixelsMain);
+}
+
+IntPair to_pair(double num) {
+    return (IntPair){
+        num > 0, (uint64_t)num, (uint64_t)((num - (uint64_t)num) * (~0ULL))
+    };
+}
+
+void transformView() {
+    viewMainCL.scaleX = to_pair(viewMain.scaleX);
+    viewMainCL.scaleY = to_pair(viewMain.scaleY);
+    viewMainCL.centerX = to_pair(viewMain.centerX);
+    viewMainCL.centerY = to_pair(viewMain.centerY);
+    viewMainCL.theta = to_pair(viewMain.theta);
+    viewMainCL.sinTheta = to_pair(viewMain.sinTheta);
+    viewMainCL.cosTheta = to_pair(viewMain.cosTheta);
+    viewMainCL.sizeX = viewMain.sizeX;
+    viewMainCL.sizeY = viewMain.sizeY;
 }

@@ -4,6 +4,8 @@
 #include <map>
 #include <string>
 
+#define USE_DOUBLE
+
 typedef struct Setting {
     char type;
     void *pointer;

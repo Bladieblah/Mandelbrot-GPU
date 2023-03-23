@@ -4,7 +4,7 @@ __constant sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE | CLK_FILTER_NEAREST 
  * RNG stuff
  */
 
-__constant ulong PCG_SHIFT = 6364136223846793005ULL;
+__constant ulong PCG_SHIFT = 6364136223846793005UL;
 __constant float PCG_MAX_1 = 4294967296.0;
 
 #define PDF_SIDES 100
@@ -277,17 +277,17 @@ return mul_intpair(square_intpair(z.x), square_intpair(z.y));
  * Checks
  */
 
-constant IntPair RADIUS_1 = {true, 0ULL, 166481865265228704ULL};
-constant IntPair RADIUS_3 = {true, 0ULL, 35712896526701688ULL};
-constant IntPair RADIUS_4 = {true, 0ULL, 25253592636908372ULL};
-constant IntPair RADIUS_5 = {true, 0ULL, 9338664187315460ULL};
+constant IntPair RADIUS_1 = {true, 0UL, 166481865265228704UL};
+constant IntPair RADIUS_3 = {true, 0UL, 35712896526701688UL};
+constant IntPair RADIUS_4 = {true, 0UL, 25253592636908372UL};
+constant IntPair RADIUS_5 = {true, 0UL, 9338664187315460UL};
 
 
-constant ComplexDouble CENTER_1 = {{false, 0ULL, 4334763900ULL},          {true, 0ULL, 13740274379125600256ULL}};
-constant ComplexDouble CENTER_2 = {{false, 0ULL, 4334763900ULL},          {true, 0ULL, 0ULL}};
-constant ComplexDouble CENTER_3 = {{true,  0ULL, 5206988104807323648ULL}, {true, 0ULL, 9777892556023484416ULL}};
-constant ComplexDouble CENTER_4 = {{false, 0ULL, 4334763900ULL},          {true, 0ULL, 10381195974969425920ULL}};
-constant ComplexDouble CENTER_5 = {{true,  0ULL, 7000790030624987136ULL}, {true, 0ULL, 617841052337451212ULL}};
+constant ComplexDouble CENTER_1 = {{false, 0UL, 4334763900UL},          {true, 0UL, 13740274379125600256UL}};
+constant ComplexDouble CENTER_2 = {{false, 0UL, 4334763900UL},          {true, 0UL, 0UL}};
+constant ComplexDouble CENTER_3 = {{true,  0UL, 5206988104807323648UL}, {true, 0UL, 9777892556023484416UL}};
+constant ComplexDouble CENTER_4 = {{false, 0UL, 4334763900UL},          {true, 0UL, 10381195974969425920UL}};
+constant ComplexDouble CENTER_5 = {{true,  0UL, 7000790030624987136UL}, {true, 0UL, 617841052337451212UL}};
 
 inline bool isValid(ComplexDouble coord) {
     IntPair c2 = cnorm2d(coord);
@@ -298,13 +298,13 @@ inline bool isValid(ComplexDouble coord) {
     }
     
     // Main bulb
-    IntPair test1 = add_intpair(sub_intpair(mul_intpair_int(256ULL, square_intpair(c2)), mul_intpair_int(96ULL, c2)), mul_intpair_int(32ULL, a));
+    IntPair test1 = add_intpair(sub_intpair(mul_intpair_int(256UL, square_intpair(c2)), mul_intpair_int(96UL, c2)), mul_intpair_int(32UL, a));
     if (test1.integ < 3 || !test1.sign) {
         return false;
     }
 
     // Head
-    IntPair test2 = mul_intpair_int(16ULL, add_intpair_int(1ULL, add_intpair(c2, mul_intpair_int(2, a))));
+    IntPair test2 = mul_intpair_int(16UL, add_intpair_int(1UL, add_intpair(c2, mul_intpair_int(2, a))));
     if (test2.integ < 1 || !test2.sign) {
         return false;
     }
@@ -383,7 +383,7 @@ inline ComplexDouble pixelToScreen(ulong2 pixelCoord, ViewSettings view) {
  * Kernels
  */
 
- typedef struct Particle {
+typedef struct Particle {
     ComplexDouble pos, offset;
     unsigned int iterCount;
     bool escaped;
@@ -418,7 +418,7 @@ __kernel void mandelStep(global Particle *particles, unsigned int stepCount) {
     }
 
     for (size_t i = 0; i < stepCount; i++) {
-        if (cnorm2d(tmp.pos).integ > 4ULL) {
+        if (cnorm2d(tmp.pos).integ > 4UL) {
             tmp.escaped = true;
             break;
         }

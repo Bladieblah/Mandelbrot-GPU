@@ -1,7 +1,14 @@
 #ifndef COORDINATES_H
 #define COORDINATES_H
 
+#include "config.hpp"
 #include "mainWindow.hpp"
+
+#ifdef USE_DOUBLE
+#define float_type double
+#else
+#define float_type float
+#endif
 
 // Forward declarations
 
@@ -13,16 +20,16 @@ typedef struct ScreenCoordinate ScreenCoordinate;
  * Coordinates in the world space, which is the complex plane.
  */
 struct WorldCoordinate {
-    float x, y;
+    float_type x, y;
     PixelCoordinate toPixel(ViewSettings view);
-    void rotate(float sinTheta, float cosTheta);
+    void rotate(float_type sinTheta, float_type cosTheta);
 };
 
 WorldCoordinate complex_mul(WorldCoordinate f1, WorldCoordinate f2);
 WorldCoordinate complex_square(WorldCoordinate f);
 WorldCoordinate operator+(WorldCoordinate f1, WorldCoordinate f2);
-WorldCoordinate operator*(float x, WorldCoordinate f);
-WorldCoordinate operator*(WorldCoordinate f, float x);
+WorldCoordinate operator*(float_type x, WorldCoordinate f);
+WorldCoordinate operator*(WorldCoordinate f, float_type x);
 
 /**
  * Coordinates in the pixel array that is drawn to the screen.
