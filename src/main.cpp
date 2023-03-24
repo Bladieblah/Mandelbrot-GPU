@@ -151,15 +151,18 @@ void display() {
         return;
     }
 
-    // Particle *particles = (Particle *)malloc(config->width * config->height * sizeof(Particle));
-    // opencl->readBuffer("particles", particles);
+    Particle *particles = (Particle *)malloc(config->width * config->height * sizeof(Particle));
+    opencl->readBuffer("particles", particles);
+    int i = config->width * config->height / 4 + config->width / 4;
+    fprintf(stderr, "Particle %d at (%.5f, %.5f)\n", i, to_double(particles[i].pos.x), to_double(particles[i].pos.y));
+    i = config->width * config->height / 4 + config->width / 4 * 3;
+    fprintf(stderr, "Particle %d at (%.5f, %.5f)\n", i, to_double(particles[i].pos.x), to_double(particles[i].pos.y));
 
-    // // for (int i = config->width * config->height / 2; i < config->width * config->height / 2 + 10; i++) {
+    // for (int i = config->width * config->height / 2; i < config->width * config->height / 2 + 10; i++) {
     // for (int i = 0; i < 4; i++) {
-    //     // fprintf(stderr, "(%lu, %lu), (%lu, %lu)\n", particles[i].offset.x.integ, particles[i].offset.x.fract, particles[i].offset.y.integ, particles[i].offset.y.fract);
-    //     fprintf(stderr, "Particle %d at (%.5f, %.5f)\n", i, to_double(particles[i].offset.x), to_double(particles[i].offset.y));
-    //     fprintf(stderr, "Particle %d at (%.5f, %.5f)\n", i, to_double(particles[i].pos.x), to_double(particles[i].pos.y));
-    //     // fprintf(stderr, "(%lu, %lu), (%lu, %lu)\n", particles[i].offset.x.integ, particles[i].offset.x.fract, particles[i].offset.y.integ, particles[i].offset.y.fract);
+        // fprintf(stderr, "(%lu, %lu), (%lu, %lu)\n", particles[i].offset.x.integ, particles[i].offset.x.fract, particles[i].offset.y.integ, particles[i].offset.y.fract);
+        // fprintf(stderr, "Particle %d at (%.5f, %.5f)\n", i, to_double(particles[i].offset.x), to_double(particles[i].offset.y));
+        // fprintf(stderr, "(%lu, %lu), (%lu, %lu)\n", particles[i].offset.x.integ, particles[i].offset.x.fract, particles[i].offset.y.integ, particles[i].offset.y.fract);
     // }
 
     opencl->startFrame();
@@ -239,7 +242,7 @@ int main(int argc, char **argv) {
     createMainWindow("Main", config->width, config->height);
     glutDisplayFunc(&display);
 
-    glutIdleFunc(&display);
+    // glutIdleFunc(&display);
 
     fprintf(stderr, "\nStarting main loop\n\n");
     glutMainLoop();

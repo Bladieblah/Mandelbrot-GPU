@@ -187,30 +187,15 @@ IntPair mul_intpair(IntPair a, IntPair b) {
     IntPair result;
     
     result.sign = a.sign == b.sign;
-    result.integ = a.integ * b.integ
-        + ((a.integ * (b.fract >> 8) >> 54)
-        + (b.integ * (a.fract >> 8) >> 54)
-        + (((a.fract >> 33) * (b.fract >> 33)) >> 60)) >> 2;
+    result.integ = a.integ * b.integ + ((
+            + ((a.integ * (b.fract >> 8)) >> 24)
+            + ((b.integ * (a.fract >> 8)) >> 24)
+            + (((a.fract >> 48) * (b.fract >> 48)))
+        ) >> 32);
     result.fract = a.integ * b.fract + b.integ * a.fract
         + (((a.fract >> 32) * (b.fract >> 32)))
         + (((a.fract & (~0UL >> 32)) * (b.fract >> 32)) >> 32)
         + (((b.fract & (~0UL >> 32)) * (a.fract >> 32)) >> 32);
-    
-    return result;
-}
-
-// Multiplication
-// Assumes a < 256
-IntPair square_intpair(IntPair a) {
-    IntPair result;
-    
-    result.sign = true;
-    result.integ = a.integ * a.integ
-        + ((a.integ * (a.fract >> 8) >> 53)
-        + (((a.fract >> 33) * (a.fract >> 33)) >> 60)) >> 2;
-    result.fract = 2 * a.integ * a.fract 
-        + (((a.fract >> 32) * (a.fract >> 32))) 
-        + (((a.fract & (~0UL >> 32)) * (a.fract >> 32)) >> 31);
     
     return result;
 }
@@ -221,8 +206,25 @@ IntPair mul_intpair_int(ulong a, IntPair b) {
     IntPair result;
     
     result.sign = b.sign;
-    result.integ = a * b.integ + (a * (b.fract >> 8) >> 55);
+    result.integ = a * b.integ + (a * (b.fract >> 8) >> 56);
     result.fract = a * b.fract;
+    
+    return result;
+}
+
+// Multiplication
+// Assumes a < 256
+IntPair square_intpair(IntPair a) {
+    IntPair result;
+    
+    result.sign = true;
+    result.integ = a.integ * a.integ + ((
+            + ((a.integ * (a.fract >> 8)) >> 23)
+            + (((a.fract >> 48) * (a.fract >> 48)))
+        ) >> 32);
+    result.fract = 2 * a.integ * a.fract 
+        + (((a.fract >> 32) * (a.fract >> 32))) 
+        + (((a.fract & (~0UL >> 32)) * (a.fract >> 32)) >> 31);
     
     return result;
 }
@@ -368,18 +370,11 @@ inline ComplexDouble screenToFractal(ComplexDouble screenCoord, ViewSettings vie
         mul_intpair(screenCoord.x, view.scaleX),
         mul_intpair(screenCoord.y, view.scaleY)
     }, view);
-    // ComplexDouble tmp = (ComplexDouble){
-    //     mul_intpair(screenCoord.x, view.scaleX),
-    //     mul_intpair(screenCoord.y, view.scaleY)
-    // };
-
-    // ComplexDouble tmp = screenCoord;
 
     return (ComplexDouble){
         add_intpair(tmp.x, view.centerX),
         add_intpair(tmp.y, view.centerY)
     };
-    return tmp;
 }
 
 inline ComplexDouble pixelToScreen(ulong2 pixelCoord, ViewSettings view) {
@@ -411,13 +406,12 @@ __kernel void initParticles(global Particle *particles, ViewSettings view) {
     ulong gid = (W * y + x);
 
     ComplexDouble offset = pixelToFractal((ulong){x, y}, view);
-    // ComplexDouble offset = pixelToScreen((ulong2){x, y}, view);
 
     particles[gid].pos = offset;
-    // particles[gid].pos = (ComplexDouble){view.scaleX, view.scaleY};
     particles[gid].offset = offset;
     particles[gid].iterCount = 1;
-    particles[gid].escaped = !isValid(offset);
+    particles[gid].escaped = false;
+    // particles[gid].escaped = !isValid(offset);
 }
 
 __kernel void mandelStep(global Particle *particles, unsigned int stepCount) {
@@ -433,13 +427,14 @@ __kernel void mandelStep(global Particle *particles, unsigned int stepCount) {
         return;
     }
 
-    for (size_t i = 0; i < stepCount; i++) {
+    for (size_t i = 0; i < 1; i++) {
         if (cnorm2d(tmp.pos).integ > 4UL) {
             tmp.escaped = true;
             break;
         }
 
         tmp.pos = add_complex(csquared(tmp.pos), tmp.offset);
+        // tmp.pos = csquared(tmp.pos);
         tmp.iterCount++;
     }
 
