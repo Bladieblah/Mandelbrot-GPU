@@ -51,6 +51,10 @@ void createKernelSpecs() {
     };
 }
 
+double to_double(IntPair num) {
+    return (num.sign ? 1 : -1) * ((double)num.integ + (((double)num.fract) / (~0ULL)));
+}
+
 void setKernelArgs() {
     opencl->setKernelBufferArg("seedNoise", 0, "randomState");
     opencl->setKernelBufferArg("seedNoise", 1, "randomIncrement");
@@ -60,9 +64,10 @@ void setKernelArgs() {
     opencl->setKernelBufferArg("initParticles", 0, "particles");
 #ifdef USE_DOUBLE
     transformView();
+    // fprintf(stderr, "ViewCenter = (%.5f, %.5f)\n", to_double(viewMainCL.centerX), to_double(viewMainCL.centerY));
     opencl->setKernelArg("initParticles", 1, sizeof(ViewSettingsCL), &(viewMainCL));
 #else
-opencl->setKernelArg("initParticles", 1, sizeof(ViewSettings), &(viewMain));
+    opencl->setKernelArg("initParticles", 1, sizeof(ViewSettings), &(viewMain));
 #endif
 
     opencl->setKernelBufferArg("mandelStep", 0, "particles");
@@ -146,6 +151,17 @@ void display() {
         return;
     }
 
+    // Particle *particles = (Particle *)malloc(config->width * config->height * sizeof(Particle));
+    // opencl->readBuffer("particles", particles);
+
+    // // for (int i = config->width * config->height / 2; i < config->width * config->height / 2 + 10; i++) {
+    // for (int i = 0; i < 4; i++) {
+    //     // fprintf(stderr, "(%lu, %lu), (%lu, %lu)\n", particles[i].offset.x.integ, particles[i].offset.x.fract, particles[i].offset.y.integ, particles[i].offset.y.fract);
+    //     fprintf(stderr, "Particle %d at (%.5f, %.5f)\n", i, to_double(particles[i].offset.x), to_double(particles[i].offset.y));
+    //     fprintf(stderr, "Particle %d at (%.5f, %.5f)\n", i, to_double(particles[i].pos.x), to_double(particles[i].pos.y));
+    //     // fprintf(stderr, "(%lu, %lu), (%lu, %lu)\n", particles[i].offset.x.integ, particles[i].offset.x.fract, particles[i].offset.y.integ, particles[i].offset.y.fract);
+    // }
+
     opencl->startFrame();
     
     displayMain();
@@ -211,7 +227,7 @@ void cleanAll() {
 int main(int argc, char **argv) {
     config = new Config("config.cfg");
     pcg32_srandom(time(NULL) ^ (intptr_t)&printf, (intptr_t)&(config->particle_count));
-    config->printValues();
+    // config->printValues();
 
     frameTime = chrono::high_resolution_clock::now();
 

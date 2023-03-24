@@ -2,6 +2,8 @@
     "files.associations": {
         "chrono": "cpp",
         "__locale": "cpp",
-        "iostream": "cpp"
+        "iostream": "cpp",
+        "ratio": "cpp",
+        "ostream": "cpp"
     }
 }

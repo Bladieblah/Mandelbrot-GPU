@@ -335,8 +335,11 @@ void destroyMainWindow() {
 
 #ifdef USE_DOUBLE
 IntPair to_pair(double num) {
+    unsigned int sign = num >= 0;
+    uint64_t inum = (uint64_t)fabs(num);
+
     return (IntPair){
-        (unsigned int)(num > 0), (uint64_t)num, (uint64_t)((num - (uint64_t)num) * (~0ULL))
+        sign, inum, (uint64_t)(((double)fabs(num) - (double)inum) * (~0UL))
     };
 }
 
