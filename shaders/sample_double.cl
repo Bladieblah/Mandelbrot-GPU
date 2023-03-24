@@ -188,8 +188,8 @@ IntPair mul_intpair(IntPair a, IntPair b) {
     
     result.sign = a.sign == b.sign;
     result.integ = a.integ * b.integ + ((
-            + ((a.integ * (b.fract >> 8)) >> 24)
-            + ((b.integ * (a.fract >> 8)) >> 24)
+            + ((a.integ * (b.fract >> 16)) >> 16)
+            + ((b.integ * (a.fract >> 16)) >> 16)
             + (((a.fract >> 48) * (b.fract >> 48)))
         ) >> 32);
     result.fract = a.integ * b.fract + b.integ * a.fract
@@ -219,7 +219,7 @@ IntPair square_intpair(IntPair a) {
     
     result.sign = true;
     result.integ = a.integ * a.integ + ((
-            + ((a.integ * (a.fract >> 8)) >> 23)
+            + ((a.integ * (a.fract >> 16)) >> 15)
             + (((a.fract >> 48) * (a.fract >> 48)))
         ) >> 32);
     result.fract = 2 * a.integ * a.fract 
@@ -312,34 +312,34 @@ inline bool isValid(ComplexDouble coord) {
         return false;
     }
 
-    // Head
-    IntPair test2 = mul_intpair_int(16UL, add_intpair_int(1UL, add_intpair(c2, mul_intpair_int(2, a))));
-    if (test2.integ < 1 || !test2.sign) {
-        return false;
-    }
+    // // Head
+    // IntPair test2 = mul_intpair_int(16UL, add_intpair_int(1UL, add_intpair(c2, mul_intpair_int(2UL, a))));
+    // if (test2.integ < 1 || !test2.sign) {
+    //     return false;
+    // }
 
-    coord.y.sign = true;
+    // coord.y.sign = true;
 
-    // 2-step bulbs
-    if (ipgt(RADIUS_1, cnorm2d(sub_complex(coord, CENTER_1)))) {
-        return false;
-    }
+    // // 2-step bulbs
+    // if (ipgt(RADIUS_1, cnorm2d(sub_complex(coord, CENTER_1)))) {
+    //     return false;
+    // }
 
-    // 3-step bulbs
-    if (ipgt(RADIUS_3, cnorm2d(sub_complex(coord, CENTER_2)))) {
-        return false;
-    }
-    if (ipgt(RADIUS_3, cnorm2d(sub_complex(coord, CENTER_3)))) {
-        return false;
-    }
+    // // 3-step bulbs
+    // if (ipgt(RADIUS_3, cnorm2d(sub_complex(coord, CENTER_2)))) {
+    //     return false;
+    // }
+    // if (ipgt(RADIUS_3, cnorm2d(sub_complex(coord, CENTER_3)))) {
+    //     return false;
+    // }
 
-    // 4-step bulbs
-    if (ipgt(RADIUS_4, cnorm2d(sub_complex(coord, CENTER_4)))) {
-        return false;
-    }
-    if (ipgt(RADIUS_5, cnorm2d(sub_complex(coord, CENTER_5)))) {
-        return false;
-    }
+    // // 4-step bulbs
+    // if (ipgt(RADIUS_4, cnorm2d(sub_complex(coord, CENTER_4)))) {
+    //     return false;
+    // }
+    // if (ipgt(RADIUS_5, cnorm2d(sub_complex(coord, CENTER_5)))) {
+    //     return false;
+    // }
 
     return true;
 }
@@ -405,7 +405,7 @@ __kernel void initParticles(global Particle *particles, ViewSettings view) {
     
     ulong gid = (W * y + x);
 
-    ComplexDouble offset = pixelToFractal((ulong){x, y}, view);
+    ComplexDouble offset = pixelToFractal((ulong2){x, y}, view);
 
     particles[gid].pos = offset;
     particles[gid].offset = offset;
@@ -427,7 +427,7 @@ __kernel void mandelStep(global Particle *particles, unsigned int stepCount) {
         return;
     }
 
-    for (size_t i = 0; i < 1; i++) {
+    for (size_t i = 0; i < stepCount; i++) {
         if (cnorm2d(tmp.pos).integ > 4UL) {
             tmp.escaped = true;
             break;
