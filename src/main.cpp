@@ -99,11 +99,11 @@ void prepareOpenCl() {
 void prepare() {
 
     #ifdef USE_DOUBLE
-    double scaleY = 1.3;
+    float scaleY = config->scale;
     viewMain = {
         scaleY / (double)config->height * (double)config->width, scaleY,
-        -0.5, 0.,
-        0., 0., 1.,
+        config->center_x, config->center_y,
+        config->theta, sin(config->theta), cos(config->theta),
         (unsigned long)config->width, (unsigned long)config->height,
         (unsigned long)(config->width * superSample), (unsigned long)(config->height * superSample),
     };

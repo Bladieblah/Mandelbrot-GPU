@@ -464,9 +464,23 @@ inline void add_particle(
 
     float phase = count / 64.;
 
-    data[index]     += ease * pown(cos(phase), 2) * 0.7 * 2147483647;
-    data[index + 1] += ease * pown(sin(phase), 2) * 2147483647;
-    data[index + 2] += ease * pown(cos(phase + M_1_PI * 0.35), 2) * 1.5 * 2147483647;
+    // data[index]     += ease * pown(cos(phase), 2) * 0.7 * 2147483647;
+    // data[index + 1] += ease * pown(sin(phase), 2) * 2147483647;
+    // data[index + 2] += ease * pown(cos(phase + M_1_PI * 0.35), 2) * 1.5 * 2147483647;
+
+    float s = sin(phase) * 0.5;
+    float c = cos(phase);
+
+    float s2 = s * (0.5 + s);
+    float c2 = (0.8 + c * 0.2);
+
+    float r = pown(clamp((c * c * c2 + s2 + 0.1) * 0.5, 0., 1.), 2);
+    float g = pown(clamp((c * c * c2 + s2 + 0.2) * 0.8, 0., 1.), 2);
+    float b = pown(clamp((c * c * (0.7 + c * 0.3) + s2 + 0.2) * 0.7, 0., 1.), 2);
+    
+    data[index]     += ease * r * UINT_MAX;
+    data[index + 1] += ease * g * UINT_MAX;
+    data[index + 2] += ease * b * UINT_MAX;
 }
 
 __kernel void renderImage(

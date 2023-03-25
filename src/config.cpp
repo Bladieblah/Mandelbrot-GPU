@@ -55,7 +55,7 @@ void Config::setValue(string name, char *value) {
             *(int *)setting.pointer = atoi(value);
             break;
         case 'f':
-            *(float *)setting.pointer = atof(value);
+            *(float_type *)setting.pointer = atof(value);
             break;
         case 'b':
             if (strcmp(value, "true") == 0 || strcmp(value, "1") == 0) {

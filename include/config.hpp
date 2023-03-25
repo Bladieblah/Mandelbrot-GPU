@@ -6,6 +6,12 @@
 
 #define USE_DOUBLE
 
+#ifdef USE_DOUBLE
+#define float_type double
+#else
+#define float_type float
+#endif
+
 typedef struct Setting {
     char type;
     void *pointer;
@@ -20,10 +26,10 @@ public:
     bool profile = true;
     bool verbose = true;
 
-    float scale = 1.3;
-    float center_x = -0.5;
-    float center_y = 0.;
-    float theta = 0.;
+    float_type scale = 1.3;
+    float_type center_x = -0.5;
+    float_type center_y = 0.;
+    float_type theta = 0.;
 
     Config(char *filename);
     void printValues();

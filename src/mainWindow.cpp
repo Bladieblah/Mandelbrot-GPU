@@ -161,8 +161,8 @@ void displayMain() {
 
 void updateView() {
     fprintf(stderr, "\n\n\n\n\n\nSetting region to:\n");
-    fprintf(stderr, "scale = %.3g\n", viewMain.scaleY);
-    fprintf(stderr, "center = (%.15g, %.15f)\n", viewMain.centerX, viewMain.centerY);
+    fprintf(stderr, "scale = %.25g\n", viewMain.scaleY);
+    fprintf(stderr, "center_x = %.25g\ncenter_y = %.25f\n", viewMain.centerX, viewMain.centerY);
     fprintf(stderr, "theta = %.6f\n", viewMain.theta);
 
     viewMain.scaleX = viewMain.scaleY / config->height * config->width;
@@ -241,6 +241,15 @@ void keyPressedMain(unsigned char key, int x, int y) {
             break;
         case 's':
             settingsMain.zoom /= 1.5;
+            break;
+
+        case '[':
+            viewMain.scaleY *= 1.2;
+            updateView();
+            break;
+        case ']':
+            viewMain.scaleY *= 1.2;
+            updateView();
             break;
 
         case 'R':
