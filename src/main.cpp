@@ -43,7 +43,7 @@ void createKernelSpecs() {
     kernelSpecs = {
         {"initParticles", {NULL, 2, {superSample * config->width, superSample * config->height}, {0, 0}, "initParticles"}},
         {"mandelStep",    {NULL, 2, {superSample * config->width, superSample * config->height}, {0, 0}, "mandelStep"}},
-        {"renderImage",   {NULL, 2, {config->width, config->height}, {12, 12}, "renderImage"}},
+        {"renderImage",   {NULL, 2, {config->width, config->height}, {0, 0}, "renderImage"}},
         {"resetImage",    {NULL, 2, {config->width, config->height}, {0, 0}, "resetImage"}},
     };
 }
