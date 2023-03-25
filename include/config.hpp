@@ -13,8 +13,6 @@ typedef struct Setting {
 
 class Config {
 public:
-    unsigned int particle_count = 100;
-
     unsigned int width = 1080;
     unsigned int height = 720;
     unsigned int steps = 100;
@@ -31,7 +29,6 @@ private:
     void printSetting(std::string name, Setting setting);
 
     const std::map<std::string, Setting> typeMap = {
-        {"particle_count", {'i', (void *)&particle_count}},
         {"width", {'i', (void *)&width}},
         {"height", {'i', (void *)&height}},
         {"steps", {'i', (void *)&steps}},

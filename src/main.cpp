@@ -28,7 +28,7 @@ unsigned int frameCount = 0;
 OpenCl *opencl;
 uint64_t *initState, *initSeq;
 
-unsigned int superSample = 3;
+unsigned int superSample = 2;
 
 vector<BufferSpec> bufferSpecs;
 void createBufferSpecs() {
@@ -43,7 +43,8 @@ void createKernelSpecs() {
     kernelSpecs = {
         {"initParticles", {NULL, 2, {superSample * config->width, superSample * config->height}, {0, 0}, "initParticles"}},
         {"mandelStep",    {NULL, 2, {superSample * config->width, superSample * config->height}, {0, 0}, "mandelStep"}},
-        {"renderImage",   {NULL, 2, {config->width, config->height}, {0, 0}, "renderImage"}},
+        {"renderImage",   {NULL, 2, {config->width, config->height}, {12, 12}, "renderImage"}},
+        {"resetImage",    {NULL, 2, {config->width, config->height}, {0, 0}, "resetImage"}},
     };
 }
 
@@ -68,21 +69,8 @@ void setKernelArgs() {
     opencl->setKernelBufferArg("renderImage", 0, "particles");
     opencl->setKernelBufferArg("renderImage", 1, "image");
     opencl->setKernelArg("renderImage", 2, sizeof(unsigned int), &superSample);
-}
-
-void initPcg() {
-    for (int i = 0; i < config->particle_count; i++) {
-        initState[i] = pcg32_random();
-        initSeq[i] = pcg32_random();
-    }
-
-    opencl->writeBuffer("initState", (void *)initState);
-    opencl->writeBuffer("initSeq", (void *)initSeq);
-    opencl->step("seedNoise");
-    opencl->flush();
-
-    free(initState);
-    free(initSeq);
+    
+    opencl->setKernelBufferArg("resetImage", 0, "image");
 }
 
 void prepareOpenCl() {
@@ -103,26 +91,14 @@ void prepareOpenCl() {
     );
 
     setKernelArgs();
-    // initPcg();
 
+    opencl->step("resetImage");
     opencl->step("initParticles");
 }
 
 void prepare() {
-    pcg32_srandom(time(NULL) ^ (intptr_t)&printf, (intptr_t)&(config->particle_count));
-
-    initState = (uint64_t *)malloc(config->particle_count * sizeof(uint64_t));
-    initSeq = (uint64_t *)malloc(config->particle_count * sizeof(uint64_t));
 
     #ifdef USE_DOUBLE
-    // double scaleY = 5.36e-06;
-    // viewMain = {
-    //     scaleY / (double)config->height * (double)config->width, scaleY,
-    //     -0.747334900834477, 0.059579692501143,
-    //     -0.250443, sin(-0.250443), cos(-0.250443),
-    //     (unsigned long)config->width, (unsigned long)config->height,
-    //     (unsigned long)(config->width * superSample), (unsigned long)(config->height * superSample),
-    // };
     double scaleY = 1.3;
     viewMain = {
         scaleY / (double)config->height * (double)config->width, scaleY,
@@ -181,7 +157,6 @@ void cleanAll() {
 
 int main(int argc, char **argv) {
     config = new Config("config.cfg");
-    pcg32_srandom(time(NULL) ^ (intptr_t)&printf, (intptr_t)&(config->particle_count));
     config->printValues();
 
     frameTime = chrono::high_resolution_clock::now();

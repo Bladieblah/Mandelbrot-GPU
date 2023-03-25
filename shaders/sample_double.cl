@@ -416,7 +416,7 @@ __kernel void initParticles(global Particle *particles, ViewSettings view) {
     particles[gid].offset = offset;
     particles[gid].iterCount = 0;
     particles[gid].escaped = !isValid(offset);
-    // particles[gid].escaped = false;
+    // particles[gid].escaped = 0;
 }
 
 __kernel void mandelStep(global Particle *particles, unsigned int stepCount) {
@@ -434,7 +434,7 @@ __kernel void mandelStep(global Particle *particles, unsigned int stepCount) {
 
     for (size_t i = 0; i < stepCount; i++) {
         if (cnorm2d(tmp.pos).integ > ESCAPE_RADIUS) {
-            tmp.escaped = true;
+            tmp.escaped = 1;
             break;
         }
 
@@ -452,9 +452,11 @@ inline void add_particle(
     uint index_p,
     float issq
 ) {
-    if (!particles[index_p].escaped || !particles[index_p].iterCount) {
+    if (particles[index_p].escaped != 1 || !particles[index_p].iterCount) {
         return;
     }
+
+    particles[index_p].escaped++;
 
     IntPair rad = cnorm2d(particles[index_p].pos);
     float count = (float)particles[index_p].iterCount + 1 - log(log(rad.integ + (float)rad.fract / INTPAIR_PRECISION)) / M_LN2;
@@ -481,14 +483,23 @@ __kernel void renderImage(
     int ssq = superSample * superSample;
     float issq = 1. / (float)ssq;
 
-
-    data[index] = 0;
-    data[index + 1] = 0;
-    data[index + 2] = 0;
-
     for (int i = 0; i < superSample; i++) {
         for (int j = 0; j < superSample; j++) {
             add_particle(particles, data, index, (superSample * W * (superSample * y + j) + superSample * x + i), issq);
         }
     }
+}
+
+__kernel void resetImage(
+    global unsigned int *data
+) {
+    const uint x = get_global_id(0);
+    const uint y = get_global_id(1);
+    const uint W = get_global_size(0);
+
+    int index = 3 * (W * y + x);
+
+    data[index] = 0;
+    data[index + 1] = 0;
+    data[index + 2] = 0;
 }
