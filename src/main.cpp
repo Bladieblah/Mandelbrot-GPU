@@ -28,25 +28,21 @@ unsigned int frameCount = 0;
 OpenCl *opencl;
 uint64_t *initState, *initSeq;
 
+unsigned int superSample = 3;
+
 vector<BufferSpec> bufferSpecs;
 void createBufferSpecs() {
     bufferSpecs = {
-        {"particles", {NULL, config->width * config->height * sizeof(Particle)}},
+        {"particles", {NULL, superSample * superSample * config->width * config->height * sizeof(Particle)}},
         {"image",     {NULL, 3 * config->width * config->height * sizeof(uint32_t)}},
-
-        {"randomState",     {NULL, config->particle_count * sizeof(uint64_t)}},
-        {"randomIncrement", {NULL, config->particle_count * sizeof(uint64_t)}},
-        {"initState",       {NULL, config->particle_count * sizeof(uint64_t)}},
-        {"initSeq",         {NULL, config->particle_count * sizeof(uint64_t)}},
     };
 }
 
 vector<KernelSpec> kernelSpecs;
 void createKernelSpecs() {
     kernelSpecs = {
-        {"seedNoise",     {NULL, 2, {config->width, config->height}, {0, 0}, "seedNoise"}},
-        {"initParticles", {NULL, 2, {config->width, config->height}, {0, 0}, "initParticles"}},
-        {"mandelStep",    {NULL, 2, {config->width, config->height}, {0, 0}, "mandelStep"}},
+        {"initParticles", {NULL, 2, {superSample * config->width, superSample * config->height}, {0, 0}, "initParticles"}},
+        {"mandelStep",    {NULL, 2, {superSample * config->width, superSample * config->height}, {0, 0}, "mandelStep"}},
         {"renderImage",   {NULL, 2, {config->width, config->height}, {0, 0}, "renderImage"}},
     };
 }
@@ -58,11 +54,6 @@ double to_double(IntPair num) {
 #endif
 
 void setKernelArgs() {
-    opencl->setKernelBufferArg("seedNoise", 0, "randomState");
-    opencl->setKernelBufferArg("seedNoise", 1, "randomIncrement");
-    opencl->setKernelBufferArg("seedNoise", 2, "initState");
-    opencl->setKernelBufferArg("seedNoise", 3, "initSeq");
-    
     opencl->setKernelBufferArg("initParticles", 0, "particles");
 #ifdef USE_DOUBLE
     transformView();
@@ -76,6 +67,7 @@ void setKernelArgs() {
 
     opencl->setKernelBufferArg("renderImage", 0, "particles");
     opencl->setKernelBufferArg("renderImage", 1, "image");
+    opencl->setKernelArg("renderImage", 2, sizeof(unsigned int), &superSample);
 }
 
 void initPcg() {
@@ -111,7 +103,7 @@ void prepareOpenCl() {
     );
 
     setKernelArgs();
-    initPcg();
+    // initPcg();
 
     opencl->step("initParticles");
 }
@@ -123,12 +115,21 @@ void prepare() {
     initSeq = (uint64_t *)malloc(config->particle_count * sizeof(uint64_t));
 
     #ifdef USE_DOUBLE
+    // double scaleY = 5.36e-06;
+    // viewMain = {
+    //     scaleY / (double)config->height * (double)config->width, scaleY,
+    //     -0.747334900834477, 0.059579692501143,
+    //     -0.250443, sin(-0.250443), cos(-0.250443),
+    //     (unsigned long)config->width, (unsigned long)config->height,
+    //     (unsigned long)(config->width * superSample), (unsigned long)(config->height * superSample),
+    // };
     double scaleY = 1.3;
     viewMain = {
         scaleY / (double)config->height * (double)config->width, scaleY,
         -0.5, 0.,
         0., 0., 1.,
-        (unsigned long)config->width, (unsigned long)config->height
+        (unsigned long)config->width, (unsigned long)config->height,
+        (unsigned long)(config->width * superSample), (unsigned long)(config->height * superSample),
     };
     #else
     float scaleY = 1.3;
@@ -136,7 +137,8 @@ void prepare() {
         scaleY / (float)config->height * (float)config->width, scaleY,
         -0.5, 0.,
         0., 0., 1.,
-        (int)config->width, (int)config->height
+        (int)config->width, (int)config->height,
+        (int)(config->width * superSample), (int)(config->height * superSample),
     };
     #endif
 

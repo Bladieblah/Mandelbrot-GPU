@@ -353,6 +353,8 @@ void transformView() {
     viewMainCL.cosTheta = to_pair(viewMain.cosTheta);
     viewMainCL.sizeX = viewMain.sizeX;
     viewMainCL.sizeY = viewMain.sizeY;
+    viewMainCL.particlesX = viewMain.particlesX;
+    viewMainCL.particlesY = viewMain.particlesY;
 }
 #endif
 

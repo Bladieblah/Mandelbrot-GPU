@@ -26,6 +26,7 @@ typedef struct ViewSettings {
     double centerX, centerY;
     double theta, sinTheta, cosTheta;
     unsigned long sizeX, sizeY;
+    unsigned long particlesX, particlesY;
 } ViewSettings;
 
 typedef struct ViewSettingsCL {
@@ -33,6 +34,7 @@ typedef struct ViewSettingsCL {
     IntPair centerX, centerY;
     IntPair theta, sinTheta, cosTheta;
     unsigned long sizeX, sizeY;
+    unsigned long particlesX, particlesY;
 } ViewSettingsCL;
 extern ViewSettingsCL viewMainCL;
 #else
@@ -47,6 +49,7 @@ typedef struct ViewSettings {
     float centerX, centerY;
     float theta, sinTheta, cosTheta;
     int sizeX, sizeY;
+    int particlesX, particlesY;
 } ViewSettings;
 #endif
 

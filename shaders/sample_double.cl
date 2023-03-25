@@ -129,6 +129,8 @@ inline float gaussianRand(
   * Double precision stuff 
   */
 
+constant float INTPAIR_PRECISION = (float)(~0UL);
+
 typedef struct IntPair {
     uint sign;
     ulong integ;
@@ -298,11 +300,13 @@ constant ComplexDouble CENTER_3 = {{true,  0UL, 5206988104807323648UL}, {true, 0
 constant ComplexDouble CENTER_4 = {{false, 0UL, 4334763900UL},          {true, 0UL, 10381195974969425920UL}};
 constant ComplexDouble CENTER_5 = {{true,  0UL, 7000790030624987136UL}, {true, 0UL, 617841052337451212UL}};
 
+constant ulong ESCAPE_RADIUS = 16UL;
+
 inline bool isValid(ComplexDouble coord) {
     IntPair c2 = cnorm2d(coord);
     IntPair a = coord.x;
 
-    if (c2.integ >= 4UL) {
+    if (c2.integ >= ESCAPE_RADIUS) {
         return false;
     }
     
@@ -318,28 +322,28 @@ inline bool isValid(ComplexDouble coord) {
         return false;
     }
 
-    coord.y.sign = true;
+    // coord.y.sign = true;
 
-    // 2-step bulbs
-    if (ipgt(RADIUS_1, cnorm2d(sub_complex(coord, CENTER_1)))) {
-        return false;
-    }
+    // // 2-step bulbs
+    // if (ipgt(RADIUS_1, cnorm2d(sub_complex(coord, CENTER_1)))) {
+    //     return false;
+    // }
 
-    // 3-step bulbs
-    if (ipgt(RADIUS_3, cnorm2d(sub_complex(coord, CENTER_2)))) {
-        return false;
-    }
-    if (ipgt(RADIUS_3, cnorm2d(sub_complex(coord, CENTER_3)))) {
-        return false;
-    }
+    // // 3-step bulbs
+    // if (ipgt(RADIUS_3, cnorm2d(sub_complex(coord, CENTER_2)))) {
+    //     return false;
+    // }
+    // if (ipgt(RADIUS_3, cnorm2d(sub_complex(coord, CENTER_3)))) {
+    //     return false;
+    // }
 
-    // 4-step bulbs
-    if (ipgt(RADIUS_4, cnorm2d(sub_complex(coord, CENTER_4)))) {
-        return false;
-    }
-    if (ipgt(RADIUS_5, cnorm2d(sub_complex(coord, CENTER_5)))) {
-        return false;
-    }
+    // // 4-step bulbs
+    // if (ipgt(RADIUS_4, cnorm2d(sub_complex(coord, CENTER_4)))) {
+    //     return false;
+    // }
+    // if (ipgt(RADIUS_5, cnorm2d(sub_complex(coord, CENTER_5)))) {
+    //     return false;
+    // }
 
     return true;
 }
@@ -353,6 +357,7 @@ typedef struct ViewSettings {
     IntPair centerX, centerY;
     IntPair theta, sinTheta, cosTheta;
     ulong sizeX, sizeY;
+    ulong particlesX, particlesY;
 } ViewSettings;
 
 inline ComplexDouble rotateCoords(ComplexDouble coords, ViewSettings view) {
@@ -379,8 +384,8 @@ inline ComplexDouble screenToFractal(ComplexDouble screenCoord, ViewSettings vie
 
 inline ComplexDouble pixelToScreen(ulong2 pixelCoord, ViewSettings view) {
     return (ComplexDouble) {
-        sub_intpair_int(div_ints((2 * pixelCoord.x), view.sizeX), 1),
-        sub_intpair_int(div_ints((2 * pixelCoord.y), view.sizeY), 1)
+        sub_intpair_int(div_ints((2 * pixelCoord.x), view.particlesX), 1),
+        sub_intpair_int(div_ints((2 * pixelCoord.y), view.particlesY), 1)
     };
 }
 
@@ -409,9 +414,9 @@ __kernel void initParticles(global Particle *particles, ViewSettings view) {
 
     particles[gid].pos = offset;
     particles[gid].offset = offset;
-    particles[gid].iterCount = 1;
-    // particles[gid].escaped = !isValid(offset);
-    particles[gid].escaped = false;
+    particles[gid].iterCount = 0;
+    particles[gid].escaped = !isValid(offset);
+    // particles[gid].escaped = false;
 }
 
 __kernel void mandelStep(global Particle *particles, unsigned int stepCount) {
@@ -428,7 +433,7 @@ __kernel void mandelStep(global Particle *particles, unsigned int stepCount) {
     }
 
     for (size_t i = 0; i < stepCount; i++) {
-        if (cnorm2d(tmp.pos).integ > 4UL) {
+        if (cnorm2d(tmp.pos).integ > ESCAPE_RADIUS) {
             tmp.escaped = true;
             break;
         }
@@ -440,31 +445,50 @@ __kernel void mandelStep(global Particle *particles, unsigned int stepCount) {
     particles[gid] = tmp;
 }
 
-__kernel void renderImage(
+inline void add_particle(
     global Particle *particles,
-    global unsigned int *data
+    global unsigned int *data,
+    uint index,
+    uint index_p,
+    float issq
 ) {
-    const int x = get_global_id(0);
-    const int y = get_global_id(1);
-
-    const int W = get_global_size(0);
-
-    int index = (W * y + x);
-
-    if (!particles[index].escaped) {
-        data[3 * index] = 0;
-        data[3 * index + 1] = 0;
-        data[3 * index + 2] = 0;
+    if (!particles[index_p].escaped || !particles[index_p].iterCount) {
         return;
     }
 
-    float count = (float)particles[index].iterCount;
-    float ease = clamp(count * 0.03, 0., 1.);
+    IntPair rad = cnorm2d(particles[index_p].pos);
+    float count = (float)particles[index_p].iterCount + 1 - log(log(rad.integ + (float)rad.fract / INTPAIR_PRECISION)) / M_LN2;
+    float ease = clamp(count * 0.03, 0., 1.) * issq;
 
     float phase = count / 64.;
 
-    data[3 * index] = ease * pown(cos(phase), 2) * 2147483647;
-    data[3 * index + 1] = ease * pown(sin(phase), 2) * 2147483647;
-    // data[3 * index + 2] = ease * pown(cos(phase + M_1_PI * 0.25), 2) * 2147483647;
-    data[3 * index + 2] = ease * pown(cos(phase + M_1_PI * 0.35), 2) * 3221225470;
+    data[index]     += ease * pown(cos(phase), 2) * 0.7 * 2147483647;
+    data[index + 1] += ease * pown(sin(phase), 2) * 2147483647;
+    data[index + 2] += ease * pown(cos(phase + M_1_PI * 0.35), 2) * 1.5 * 2147483647;
+}
+
+__kernel void renderImage(
+    global Particle *particles,
+    global unsigned int *data,
+    uint superSample
+) {
+    const uint x = get_global_id(0);
+    const uint y = get_global_id(1);
+    const uint W = get_global_size(0);
+
+    int index = 3 * (W * y + x);
+    
+    int ssq = superSample * superSample;
+    float issq = 1. / (float)ssq;
+
+
+    data[index] = 0;
+    data[index + 1] = 0;
+    data[index + 2] = 0;
+
+    for (int i = 0; i < superSample; i++) {
+        for (int j = 0; j < superSample; j++) {
+            add_particle(particles, data, index, (superSample * W * (superSample * y + j) + superSample * x + i), issq);
+        }
+    }
 }
