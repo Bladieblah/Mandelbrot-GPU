@@ -288,17 +288,17 @@ inline IntPair cnorm2d(ComplexDouble z) {
  * Checks
  */
 // TODO: Redo all these
-constant IntPair RADIUS_1 = {true, 0UL, 166481865265228704UL};
-constant IntPair RADIUS_3 = {true, 0UL, 35712896526701688UL};
-constant IntPair RADIUS_4 = {true, 0UL, 25253592636908372UL};
-constant IntPair RADIUS_5 = {true, 0UL, 9338664187315460UL};
+constant IntPair RADIUS_1 = {true, 0UL, 161956694476507040UL};
+constant IntPair RADIUS_2 = {true, 0UL, 63129369906252520UL};
+constant IntPair RADIUS_3 = {true, 0UL, 34905851473476896UL};
+constant IntPair RADIUS_4 = {true, 0UL, 27342686403255984UL};
+constant IntPair RADIUS_5 = {true, 0UL, 9758327614992352UL};
 
-
-constant ComplexDouble CENTER_1 = {{false, 0UL, 4334763900UL},          {true, 0UL, 13740274379125600256UL}};
-constant ComplexDouble CENTER_2 = {{false, 0UL, 4334763900UL},          {true, 0UL, 0UL}};
-constant ComplexDouble CENTER_3 = {{true,  0UL, 5206988104807323648UL}, {true, 0UL, 9777892556023484416UL}};
-constant ComplexDouble CENTER_4 = {{false, 0UL, 4334763900UL},          {true, 0UL, 10381195974969425920UL}};
-constant ComplexDouble CENTER_5 = {{true,  0UL, 7000790030624987136UL}, {true, 0UL, 617841052337451212UL}};
+constant ComplexDouble CENTER_1 = {{false, 0UL, 2307687683621064704UL}, {true, 0UL, 13724377590839906304UL}};
+constant ComplexDouble CENTER_2 = {{false, 1UL, 5700043918776250368UL}, {true, 0UL, 0UL}};
+constant ComplexDouble CENTER_3 = {{true, 0UL, 5192758456749238272UL}, {true, 0UL, 9795221103139772416UL}};
+constant ComplexDouble CENTER_4 = {{false, 0UL, 9306382385186467840UL}, {true, 0UL, 10385516913498476544UL}};
+constant ComplexDouble CENTER_5 = {{true, 0UL, 6991316003935920128UL}, {true, 0UL, 6198106008766409728UL}};
 
 constant ulong ESCAPE_RADIUS = 16UL;
 
@@ -322,28 +322,28 @@ inline bool isValid(ComplexDouble coord) {
         return false;
     }
 
-    // coord.y.sign = true;
+    coord.y.sign = true;
 
-    // // 2-step bulbs
-    // if (ipgt(RADIUS_1, cnorm2d(sub_complex(coord, CENTER_1)))) {
-    //     return false;
-    // }
+    // 2-step bulbs
+    if (ipgt(RADIUS_1, cnorm2d(sub_complex(coord, CENTER_1)))) {
+        return false;
+    }
 
-    // // 3-step bulbs
-    // if (ipgt(RADIUS_3, cnorm2d(sub_complex(coord, CENTER_2)))) {
-    //     return false;
-    // }
-    // if (ipgt(RADIUS_3, cnorm2d(sub_complex(coord, CENTER_3)))) {
-    //     return false;
-    // }
+    // 3-step bulbs
+    if (ipgt(RADIUS_3, cnorm2d(sub_complex(coord, CENTER_2)))) {
+        return false;
+    }
+    if (ipgt(RADIUS_3, cnorm2d(sub_complex(coord, CENTER_3)))) {
+        return false;
+    }
 
-    // // 4-step bulbs
-    // if (ipgt(RADIUS_4, cnorm2d(sub_complex(coord, CENTER_4)))) {
-    //     return false;
-    // }
-    // if (ipgt(RADIUS_5, cnorm2d(sub_complex(coord, CENTER_5)))) {
-    //     return false;
-    // }
+    // 4-step bulbs
+    if (ipgt(RADIUS_4, cnorm2d(sub_complex(coord, CENTER_4)))) {
+        return false;
+    }
+    if (ipgt(RADIUS_5, cnorm2d(sub_complex(coord, CENTER_5)))) {
+        return false;
+    }
 
     return true;
 }

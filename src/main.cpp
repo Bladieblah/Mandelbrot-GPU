@@ -108,11 +108,11 @@ void prepare() {
         (unsigned long)(config->width * superSample), (unsigned long)(config->height * superSample),
     };
     #else
-    float scaleY = 1.3;
+    float scaleY = config->scale;
     viewMain = {
         scaleY / (float)config->height * (float)config->width, scaleY,
-        -0.5, 0.,
-        0., 0., 1.,
+        config->center_x, config->center_y,
+        config->theta, sin(config->theta), cos(config->theta),
         (int)config->width, (int)config->height,
         (int)(config->width * superSample), (int)(config->height * superSample),
     };

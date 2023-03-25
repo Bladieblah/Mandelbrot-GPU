@@ -4,7 +4,7 @@
 #include <map>
 #include <string>
 
-// #define USE_DOUBLE
+#define USE_DOUBLE
 
 typedef struct Setting {
     char type;
@@ -20,6 +20,11 @@ public:
     bool profile = true;
     bool verbose = true;
 
+    float scale = 1.3;
+    float center_x = -0.5;
+    float center_y = 0.;
+    float theta = 0.;
+
     Config(char *filename);
     void printValues();
 
@@ -32,6 +37,10 @@ private:
         {"width", {'i', (void *)&width}},
         {"height", {'i', (void *)&height}},
         {"steps", {'i', (void *)&steps}},
+        {"scale", {'f', (void *)&scale}},
+        {"center_x", {'f', (void *)&center_x}},
+        {"center_y", {'f', (void *)&center_y}},
+        {"theta", {'f', (void *)&theta}},
         {"profile", {'b', (void *)&profile}},
         {"verbose", {'b', (void *)&verbose}},
     };
