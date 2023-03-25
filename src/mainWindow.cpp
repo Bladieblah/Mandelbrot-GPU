@@ -161,9 +161,9 @@ void displayMain() {
 
 void updateView() {
     fprintf(stderr, "\n\n\n\n\n\nSetting region to:\n");
-    fprintf(stderr, "scale = %.3f\n", viewMain.scaleY);
-    fprintf(stderr, "center = (%.3f, %.3f)\n", viewMain.centerX, viewMain.centerY);
-    fprintf(stderr, "theta = %.3f\n", viewMain.theta);
+    fprintf(stderr, "scale = %.3g\n", viewMain.scaleY);
+    fprintf(stderr, "center = (%.15g, %.15f)\n", viewMain.centerX, viewMain.centerY);
+    fprintf(stderr, "theta = %.6f\n", viewMain.theta);
 
     viewMain.scaleX = viewMain.scaleY / config->height * config->width;
     viewMain.cosTheta = cos(viewMain.theta);

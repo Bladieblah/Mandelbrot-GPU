@@ -272,7 +272,8 @@ __kernel void initParticles(global Particle *particles, ViewSettings view) {
     particles[gid].pos = offset;
     particles[gid].offset = offset;
     particles[gid].iterCount = 1;
-    particles[gid].escaped = !isValid(offset);
+    // particles[gid].escaped = !isValid(offset);
+    particles[gid].escaped = false;
 }
 
 __kernel void mandelStep(global Particle *particles, unsigned int stepCount) {
@@ -289,6 +290,7 @@ __kernel void mandelStep(global Particle *particles, unsigned int stepCount) {
     }
 
     for (size_t i = 0; i < stepCount; i++) {
+    // for (size_t i = 0; i < 1; i++) {
         if (cnorm2(tmp.pos) > 4.) {
             tmp.escaped = true;
             break;
@@ -321,11 +323,11 @@ __kernel void renderImage(
 
     float period = 255;
     float count = (float)particles[index].iterCount;
-    float ease = clamp(count * 0.01, 0., 1.);
+    float ease = clamp(count * 0.1, 0., 1.);
 
     float phase = count / 64.;
 
-    data[3 * index] = ease * pown(cos(phase), 2) * 2147483647;
-    data[3 * index + 1] = ease * pown(sin(phase), 2) * 2147483647;
-    data[3 * index + 2] = ease * pown(cos(phase + M_1_PI * 0.25), 2) * 2147483647;
+    data[3 * index] = ease * pown(cos(phase), 2) * 2147483647 * 2;
+    data[3 * index + 1] = ease * pown(sin(phase), 2) * 2147483647 * 2;
+    data[3 * index + 2] = ease * pown(cos(phase + M_1_PI * 0.25), 2) * 2147483647 * 2;
 }

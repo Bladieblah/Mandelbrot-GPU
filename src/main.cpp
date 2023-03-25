@@ -51,9 +51,11 @@ void createKernelSpecs() {
     };
 }
 
+#ifdef USE_DOUBLE
 double to_double(IntPair num) {
     return (num.sign ? 1 : -1) * ((double)num.integ + (((double)num.fract) / (~0ULL)));
 }
+#endif
 
 void setKernelArgs() {
     opencl->setKernelBufferArg("seedNoise", 0, "randomState");
@@ -151,6 +153,19 @@ void display() {
         return;
     }
 
+// #ifdef USE_DOUBLE
+//     Particle *particles = (Particle *)malloc(config->width * config->height * sizeof(Particle));
+//     opencl->readBuffer("particles", particles);
+//     int i = config->width * config->height / 3 + config->width / 25;
+//     fprintf(stderr, "Particle %d at (%.5f, %.5f)\n", i, to_double(particles[i].pos.x), to_double(particles[i].pos.y));
+// #else
+//     Particle *particles = (Particle *)malloc(config->width * config->height * sizeof(Particle));
+//     opencl->readBuffer("particles", particles);
+//     int i = config->width * config->height / 3 + config->width / 25;
+//     fprintf(stderr, "Particle %d at (%.5f, %.5f)\n", i, particles[i].pos.s[0], particles[i].pos.s[1]);
+// #endif
+
+
     opencl->startFrame();
     
     displayMain();
@@ -191,7 +206,7 @@ int main(int argc, char **argv) {
     createMainWindow("Main", config->width, config->height);
     glutDisplayFunc(&display);
 
-    glutIdleFunc(&display);
+    // glutIdleFunc(&display);
 
     fprintf(stderr, "\nStarting main loop\n\n");
     glutMainLoop();

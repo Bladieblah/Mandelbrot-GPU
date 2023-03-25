@@ -136,7 +136,7 @@ typedef struct IntPair {
 } IntPair;
 
 bool ipgt(IntPair x0, IntPair x1) {
-    return ((x0.integ <= x1.integ) ? 0 : 1) | (x0.fract > x1.fract) << 1;
+    return (x0.integ > x1.integ) | (x0.integ == x1.integ & x0.fract > x1.fract);
 }
 
 IntPair add_intpair(IntPair a, IntPair b) {
@@ -279,7 +279,7 @@ inline ComplexDouble csquared(ComplexDouble z) {
 }
 
 inline IntPair cnorm2d(ComplexDouble z) {
-    return mul_intpair(square_intpair(z.x), square_intpair(z.y));
+    return add_intpair(square_intpair(z.x), square_intpair(z.y));
 }
 
 /**
@@ -427,7 +427,8 @@ __kernel void mandelStep(global Particle *particles, unsigned int stepCount) {
         return;
     }
 
-    for (size_t i = 0; i < stepCount; i++) {
+    // for (size_t i = 0; i < stepCount; i++) {
+    for (size_t i = 0; i < 1; i++) {
         if (cnorm2d(tmp.pos).integ > 4UL) {
             tmp.escaped = true;
             break;
@@ -460,11 +461,11 @@ __kernel void renderImage(
     }
 
     float count = (float)particles[index].iterCount;
-    float ease = clamp(count * 0.01, 0., 1.);
+    float ease = clamp(count * 0.1, 0., 1.);
 
     float phase = count / 64.;
 
-    data[3 * index] = ease * pown(cos(phase), 2) * 2147483647;
-    data[3 * index + 1] = ease * pown(sin(phase), 2) * 2147483647;
-    data[3 * index + 2] = ease * pown(cos(phase + M_1_PI * 0.25), 2) * 2147483647;
+    data[3 * index] = ease * pown(cos(phase), 2) * 2147483647 * 2;
+    data[3 * index + 1] = ease * pown(sin(phase), 2) * 2147483647 * 2;
+    data[3 * index + 2] = ease * pown(cos(phase + M_1_PI * 0.25), 2) * 2147483647 * 2;
 }
