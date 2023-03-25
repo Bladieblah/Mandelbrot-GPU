@@ -218,6 +218,7 @@ typedef struct ViewSettings {
     float centerX, centerY;
     float theta, sinTheta, cosTheta;
     int sizeX, sizeY;
+    int particlesX, particlesY;
 } ViewSettings;
 
 inline float2 rotateCoords(float2 coords, ViewSettings view) {
@@ -241,8 +242,8 @@ inline float2 screenToFractal(float2 screenCoord, ViewSettings view) {
 
 inline float2 pixelToScreen(int2 pixelCoord, ViewSettings view) {
     return (float2) {
-        (2. * pixelCoord.x) / (float)view.sizeX - 1.,
-        (2. * pixelCoord.y) / (float)view.sizeY - 1.
+        (2. * pixelCoord.x) / (float)view.particlesX - 1.,
+        (2. * pixelCoord.y) / (float)view.particlesY - 1.
     };
 }
 
@@ -257,7 +258,7 @@ inline float2 pixelToScreen(int2 pixelCoord, ViewSettings view) {
  typedef struct Particle {
     float2 pos, offset;
     unsigned int iterCount;
-    bool escaped;
+    int escaped;
 } Particle;
 
 __kernel void initParticles(global Particle *particles, ViewSettings view) {
@@ -271,9 +272,8 @@ __kernel void initParticles(global Particle *particles, ViewSettings view) {
 
     particles[gid].pos = offset;
     particles[gid].offset = offset;
-    particles[gid].iterCount = 1;
-    // particles[gid].escaped = !isValid(offset);
-    particles[gid].escaped = false;
+    particles[gid].iterCount = 0;
+    particles[gid].escaped = !isValid(offset);
 }
 
 __kernel void mandelStep(global Particle *particles, unsigned int stepCount) {
@@ -290,7 +290,6 @@ __kernel void mandelStep(global Particle *particles, unsigned int stepCount) {
     }
 
     for (size_t i = 0; i < stepCount; i++) {
-    // for (size_t i = 0; i < 1; i++) {
         if (cnorm2(tmp.pos) > 4.) {
             tmp.escaped = true;
             break;
@@ -303,33 +302,63 @@ __kernel void mandelStep(global Particle *particles, unsigned int stepCount) {
     particles[gid] = tmp;
 }
 
-__kernel void renderImage(
+inline void add_particle(
     global Particle *particles,
-    global unsigned int *data
+    global unsigned int *data,
+    uint index,
+    uint index_p,
+    float issq
 ) {
-    const int x = get_global_id(0);
-    const int y = get_global_id(1);
-    
-    const int W = get_global_size(0);
-    
-    int index = (W * y + x);
-
-    if (!particles[index].escaped) {
-        data[3 * index] = 0;
-        data[3 * index + 1] = 0;
-        data[3 * index + 2] = 0;
+    if (particles[index_p].escaped != 1 || !particles[index_p].iterCount) {
         return;
     }
 
-    float period = 255;
-    float count = (float)particles[index].iterCount;
-    float ease = clamp(count * 0.1, 0., 1.);
+    particles[index_p].escaped++;
+
+    float rad = cnorm2(particles[index_p].pos);
+    float count = (float)particles[index_p].iterCount + 1 - log(log(rad)) / M_LN2;
+    float ease = clamp(count * 0.03, 0., 1.) * issq;
 
     float phase = count / 64.;
 
-    data[3 * index] = ease * pown(cos(phase), 2) * 2147483647 * 2;
-    data[3 * index + 1] = ease * pown(sin(phase), 2) * 2147483647 * 2;
-    data[3 * index + 2] = ease * pown(cos(phase + M_1_PI * 0.25), 2) * 2147483647 * 2;
+    data[index]     += ease * pown(cos(phase), 2) * 0.7 * 2147483647;
+    data[index + 1] += ease * pown(sin(phase), 2) * 2147483647;
+    data[index + 2] += ease * pown(cos(phase + M_1_PI * 0.35), 2) * 1.5 * 2147483647;
+}
+
+__kernel void renderImage(
+    global Particle *particles,
+    global unsigned int *data,
+    uint superSample
+) {
+    const uint x = get_global_id(0);
+    const uint y = get_global_id(1);
+    const uint W = get_global_size(0);
+
+    int index = 3 * (W * y + x);
+    
+    int ssq = superSample * superSample;
+    float issq = 1. / (float)ssq;
+
+    for (int i = 0; i < superSample; i++) {
+        for (int j = 0; j < superSample; j++) {
+            add_particle(particles, data, index, (superSample * W * (superSample * y + j) + superSample * x + i), issq);
+        }
+    }
+}
+
+__kernel void resetImage(
+    global unsigned int *data
+) {
+    const uint x = get_global_id(0);
+    const uint y = get_global_id(1);
+    const uint W = get_global_size(0);
+
+    int index = 3 * (W * y + x);
+
+    data[index] = 0;
+    data[index + 1] = 0;
+    data[index + 2] = 0;
 }
 
 // function setPixelHSV(x, y, h, s, v) {

@@ -18,7 +18,7 @@ typedef struct {
 typedef struct Particle {
     ComplexDouble pos, offset;
     unsigned int iterCount;
-    bool escaped;
+    int escaped;
 } Particle;
 
 typedef struct ViewSettings {
@@ -41,7 +41,7 @@ extern ViewSettingsCL viewMainCL;
 typedef struct Particle {
     cl_float2 pos, offset;
     unsigned int iterCount;
-    bool escaped;
+    int escaped;
 } Particle;
 
 typedef struct ViewSettings {
