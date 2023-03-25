@@ -200,6 +200,36 @@ void selectRegion() {
     updateView();
 }
 
+void writeData() {
+    int i, j, k;
+    FILE *outFile;
+    char filename[200];
+
+    sprintf(filename, "raw_images/weighted_%lu_%lu_%.6f_%.6f_%.6f_%.6f.csv", 
+        viewMain.sizeX, viewMain.sizeY, viewMain.scaleY, viewMain.theta, viewMain.centerX, viewMain.centerY);
+    
+    outFile = fopen(filename, "w");
+
+    if (outFile == NULL) {
+        fprintf(stderr, "\nError opening file %s\n", filename);
+        return;
+    }
+
+    k = 0;
+    for (j = 0; j < viewMain.sizeY; j++) {
+        fprintf(outFile, "%u", pixelsMain[k]);
+        k++;
+
+        for (i = 1; i < 3 * viewMain.sizeX; i++) {
+            fprintf(outFile, ",%u", pixelsMain[k]);
+            k++;
+        }
+        fprintf(outFile, "\n");
+    }
+
+    fclose(outFile);
+}
+
 void keyPressedMain(unsigned char key, int x, int y) {
     switch (key) {
         case 'a':
@@ -208,6 +238,10 @@ void keyPressedMain(unsigned char key, int x, int y) {
         case 'e':
             glutSetWindow(windowIdMain);
             glutPostRedisplay();
+            break;
+        
+        case 'W':
+            writeData();
             break;
         
         case 'g':
@@ -373,4 +407,3 @@ void transformView() {
     viewMainCL.particlesY = viewMain.particlesY;
 }
 #endif
-
