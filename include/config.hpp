@@ -34,7 +34,7 @@ private:
         {"particle_count", {'i', (void *)&particle_count}},
         {"width", {'i', (void *)&width}},
         {"height", {'i', (void *)&height}},
-        {"frame_steps", {'i', (void *)&steps}},
+        {"steps", {'i', (void *)&steps}},
         {"profile", {'b', (void *)&profile}},
         {"verbose", {'b', (void *)&verbose}},
     };

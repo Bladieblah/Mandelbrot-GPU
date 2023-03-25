@@ -66,7 +66,6 @@ void setKernelArgs() {
     opencl->setKernelBufferArg("initParticles", 0, "particles");
 #ifdef USE_DOUBLE
     transformView();
-    // fprintf(stderr, "ViewCenter = (%.5f, %.5f)\n", to_double(viewMainCL.centerX), to_double(viewMainCL.centerY));
     opencl->setKernelArg("initParticles", 1, sizeof(ViewSettingsCL), &(viewMainCL));
 #else
     opencl->setKernelArg("initParticles", 1, sizeof(ViewSettings), &(viewMain));
@@ -153,19 +152,6 @@ void display() {
         return;
     }
 
-// #ifdef USE_DOUBLE
-//     Particle *particles = (Particle *)malloc(config->width * config->height * sizeof(Particle));
-//     opencl->readBuffer("particles", particles);
-//     int i = config->width * config->height / 3 + config->width / 25;
-//     fprintf(stderr, "Particle %d at (%.5f, %.5f)\n", i, to_double(particles[i].pos.x), to_double(particles[i].pos.y));
-// #else
-//     Particle *particles = (Particle *)malloc(config->width * config->height * sizeof(Particle));
-//     opencl->readBuffer("particles", particles);
-//     int i = config->width * config->height / 3 + config->width / 25;
-//     fprintf(stderr, "Particle %d at (%.5f, %.5f)\n", i, particles[i].pos.s[0], particles[i].pos.s[1]);
-// #endif
-
-
     opencl->startFrame();
     
     displayMain();
@@ -206,7 +192,7 @@ int main(int argc, char **argv) {
     createMainWindow("Main", config->width, config->height);
     glutDisplayFunc(&display);
 
-    // glutIdleFunc(&display);
+    glutIdleFunc(&display);
 
     fprintf(stderr, "\nStarting main loop\n\n");
     glutMainLoop();
