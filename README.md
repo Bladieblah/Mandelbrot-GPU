@@ -1,3 +1,3 @@
-# GPU template
+# Mandelbrot GPU
 
-Template for running simulations with openCL and rendering results with openGL
+Render mandelbrot fractals on the GPU using openCL. Supports double precision using fixed point decimal calculations.
