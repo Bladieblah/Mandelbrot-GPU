@@ -5,17 +5,24 @@
 
 using namespace std;
 
-colourMap::colourMap(vector<float> _x, vector< vector<float> > _y, int _size) {
-    int i;
+ColourMap::ColourMap(vector<Colour> colours, size_t size) {
+    m_size = size;
+
+    vector<float> x;
+    vector< vector<float> > y;
+
+    for (Colour colour : colours) {
+        vector<float> tmp(colour.rgb, colour.rgb + 3 * sizeof(float));
+        x.push_back(colour.x);
+        y.push_back(tmp);
+    }
     
-    size = _size;
-    
-    Interp1d interp(_x, _y);
+    Interp1d interp(x, y);
     
     float p = 0;
-    float dp = 1. / (size - 1.);
+    float dp = 1. / (m_size - 1.);
     
-    for (i=0; i<size; i++) {
+    for (size_t i = 0; i < m_size; i++) {
         vector<float> result = interp.getValue(p);
         map.push_back(result);
         
@@ -23,14 +30,16 @@ colourMap::colourMap(vector<float> _x, vector< vector<float> > _y, int _size) {
     }
 }
 
-vector<float> colourMap::get(float p) {
-    int i = (int)(p * size);
+vector<float> ColourMap::get(float p) {
+    size_t i = (size_t)(p * m_size);
     
     return map[i];
 }
 
-void colourMap::apply(float *colourMap) {
-    for (int i=0; i<size; i++)
-        for (int j=0; j<3; j++)
+void ColourMap::apply(float *colourMap) {
+    for (size_t i = 0; i < m_size; i++) {
+        for (size_t j = 0; j < 3; j++) {
             colourMap[3 * i + j] = map[i][j];
+        }
+    }
 }

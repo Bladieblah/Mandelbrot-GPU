@@ -3,16 +3,21 @@
 
 #include <vector>
 
-class colourMap {
+typedef struct {
+    float x;
+    float rgb[3];
+} Colour;
+
+class ColourMap {
 public:
-    colourMap(std::vector<float> _x, std::vector< std::vector<float> > _y, int _size);
+    ColourMap(std::vector<Colour> colours, size_t size);
     
     void apply(float *colourMap);
     std::vector<float> get(float p);
     
     std::vector< std::vector<float> > map;
     
-    int size;
+    size_t m_size;
 };
 
 #endif
