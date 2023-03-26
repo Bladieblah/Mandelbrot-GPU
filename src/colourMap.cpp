@@ -1,11 +1,11 @@
 #include <vector>
 
-#include "colour.hpp"
+#include "colourMap.hpp"
 #include "interp.hpp"
 
 using namespace std;
 
-Colour::Colour(vector<float> _x, vector< vector<float> > _y, int _size) {
+colourMap::colourMap(vector<float> _x, vector< vector<float> > _y, int _size) {
     int i;
     
     size = _size;
@@ -23,13 +23,13 @@ Colour::Colour(vector<float> _x, vector< vector<float> > _y, int _size) {
     }
 }
 
-vector<float> Colour::get(float p) {
+vector<float> colourMap::get(float p) {
     int i = (int)(p * size);
     
     return map[i];
 }
 
-void Colour::apply(float *colourMap) {
+void colourMap::apply(float *colourMap) {
     for (int i=0; i<size; i++)
         for (int j=0; j<3; j++)
             colourMap[3 * i + j] = map[i][j];

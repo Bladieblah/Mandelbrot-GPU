@@ -1,3 +1,6 @@
+#ifndef INTERP_H
+#define INTERP_H
+
 #include <math.h>
 #include <vector>
 
@@ -12,3 +15,5 @@ public:
     std::vector<float> x;
     std::vector< std::vector<float> > y;
 };
+
+#endif

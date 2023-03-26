@@ -1,8 +1,11 @@
+#ifndef COLOURMAP_H
+#define COLOURMAP_H
+
 #include <vector>
 
-class Colour {
+class colourMap {
 public:
-    Colour(std::vector<float> _x, std::vector< std::vector<float> > _y, int _size);
+    colourMap(std::vector<float> _x, std::vector< std::vector<float> > _y, int _size);
     
     void apply(float *colourMap);
     std::vector<float> get(float p);
@@ -11,3 +14,5 @@ public:
     
     int size;
 };
+
+#endif
