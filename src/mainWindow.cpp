@@ -19,6 +19,7 @@ MouseState mouseMain;
 ViewSettings viewMain, defaultView;
 std::stack<ViewSettings> viewStackMain;
 bool selecting = true;
+unsigned int count0 = 0;
 
 #ifdef USE_DOUBLE
 ViewSettingsCL viewMainCL;
@@ -284,6 +285,17 @@ void keyPressedMain(unsigned char key, int x, int y) {
         case ']':
             viewMain.scaleY /= 1.2;
             updateView();
+            break;
+        
+        case ',':
+            if (count0 > 0) {
+                count0 -= 10;
+                opencl->setKernelArg("renderImage", 4, sizeof(unsigned int), &count0);
+            }
+            break;
+        case '.':
+            count0 += 10;
+            opencl->setKernelArg("renderImage", 4, sizeof(unsigned int), &count0);
             break;
 
         case 'R':

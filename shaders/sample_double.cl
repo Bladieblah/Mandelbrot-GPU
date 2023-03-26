@@ -445,8 +445,8 @@ __kernel void mandelStep(global Particle *particles, unsigned int stepCount) {
     particles[gid] = tmp;
 }
 
-inline uint transform_count(uint count) {
-    return 100
+inline uint transform_count(uint count, uint count0) {
+    return 100 + count0
         + 11 * (count - (count % 121)) + count % 171
         + ((count % 7) / 6) * 30
         + (((count + 90) % 133) >> 7) * 500
@@ -466,18 +466,22 @@ inline void add_particle(
     uint numColours,
     uint index,
     uint index_p,
+    uint count0,
     float issq
 ) {
-    if (particles[index_p].escaped != 1 || !particles[index_p].iterCount) {
+    if (!particles[index_p].escaped || !particles[index_p].iterCount) {
         return;
     }
+    // if (particles[index_p].escaped != 1 || !particles[index_p].iterCount) {
+    //     return;
+    // }
 
-    particles[index_p].escaped++;
+    // particles[index_p].escaped++;
 
     IntPair rad = cnorm2d(particles[index_p].pos);
     float count = (float)particles[index_p].iterCount + 1 - log(log(rad.integ + (float)rad.fract / INTPAIR_PRECISION)) / M_LN2;
     // uint colorIndex = 3 * ((uint)(4 * count) % numColours);
-    uint colorIndex = 3 * (transform_count((uint)(8 * count)) / 2 % numColours);
+    uint colorIndex = 3 * (transform_count((uint)(8 * count), count0) / 2 % numColours);
     float ease = clamp(count * 0.03, 0., 1.) * issq;
     
     data[index]     += ease * colourMap[colorIndex];
@@ -511,6 +515,7 @@ __kernel void renderImage(
     global uint *data,
     global uint *colourMap,
     uint numColours,
+    uint count0,
     uint superSample
 ) {
     const uint x = get_global_id(0);
@@ -522,6 +527,10 @@ __kernel void renderImage(
     int ssq = superSample * superSample;
     float issq = 1. / (float)ssq;
 
+    data[index] = 0;
+    data[index + 1] = 0;
+    data[index + 2] = 0;
+
     for (int i = 0; i < superSample; i++) {
         for (int j = 0; j < superSample; j++) {
             add_particle(
@@ -531,6 +540,7 @@ __kernel void renderImage(
                 numColours,
                 index,
                 (superSample * W * (superSample * y + j) + superSample * x + i), 
+                count0,
                 issq
             );
         }

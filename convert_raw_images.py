@@ -10,11 +10,12 @@ def get_basename(s: str):
     return s
 
 def convert_file(fn: str):
+    print("Converting", fn)
     in_file = "raw_images/" + fn + ".csv"
     out_file = "images/" + fn + ".png"
 
     data = np.loadtxt(in_file, delimiter=',', dtype=np.uint32)
-    data = data.reshape((data.shape[0], -1, 3))
+    data = data.reshape((data.shape[0], -1, 3))[::-1]
     img = Image.fromarray((data / 16777216).astype(np.uint8), "RGB")
     img.save(out_file)
 

@@ -68,11 +68,13 @@ void setKernelArgs() {
     opencl->setKernelBufferArg("mandelStep", 0, "particles");
     opencl->setKernelArg("mandelStep", 1, sizeof(uint32_t), &(config->steps));
 
+    unsigned int zero = 0;
     opencl->setKernelBufferArg("renderImage", 0, "particles");
     opencl->setKernelBufferArg("renderImage", 1, "image");
     opencl->setKernelBufferArg("renderImage", 2, "colourMap");
     opencl->setKernelArg("renderImage", 3, sizeof(unsigned int), &(config->num_colours));
-    opencl->setKernelArg("renderImage", 4, sizeof(unsigned int), &superSample);
+    opencl->setKernelArg("renderImage", 4, sizeof(unsigned int), &zero);
+    opencl->setKernelArg("renderImage", 5, sizeof(unsigned int), &superSample);
     
     opencl->setKernelBufferArg("resetImage", 0, "image");
 }
