@@ -86,7 +86,7 @@ void prepareOpenCl() {
         bufferSpecs,
         kernelSpecs,
         config->profile,
-        true,
+        config->useGpu,
         config->verbose
     );
 
