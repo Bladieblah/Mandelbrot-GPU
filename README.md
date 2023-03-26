@@ -12,14 +12,16 @@ make
 ## Configuration
 The program can be configured with the `config.cfg` file,
 
-```yaml
+```cfg
 # Resolution
 width = 1080
 height = 720
 
 # Number of iterations per frame
 steps = 20
-anti_alias_samples = 2 # Number of anti-aliasing samples in the x and y directions, 
+
+# Number of anti-aliasing samples in the x and y directions
+anti_alias_samples = 2
 
 # Technical options, can be ignored
 profile = false
