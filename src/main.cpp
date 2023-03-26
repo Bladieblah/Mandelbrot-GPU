@@ -6,6 +6,7 @@
 
 #include <GLUT/glut.h>
 
+#include "colourMap.hpp"
 #include "config.hpp"
 #include "mainWindow.hpp"
 #include "opencl.hpp"
@@ -35,6 +36,7 @@ void createBufferSpecs() {
     bufferSpecs = {
         {"particles", {NULL, superSample * superSample * config->width * config->height * sizeof(Particle)}},
         {"image",     {NULL, 3 * config->width * config->height * sizeof(uint32_t)}},
+        {"colourMap", {NULL, 3 * config->num_colours * sizeof(unsigned int)}},
     };
 }
 
@@ -68,7 +70,9 @@ void setKernelArgs() {
 
     opencl->setKernelBufferArg("renderImage", 0, "particles");
     opencl->setKernelBufferArg("renderImage", 1, "image");
-    opencl->setKernelArg("renderImage", 2, sizeof(unsigned int), &superSample);
+    opencl->setKernelBufferArg("renderImage", 2, "colourMap");
+    opencl->setKernelArg("renderImage", 3, sizeof(unsigned int), &(config->num_colours));
+    opencl->setKernelArg("renderImage", 4, sizeof(unsigned int), &superSample);
     
     opencl->setKernelBufferArg("resetImage", 0, "image");
 }
@@ -89,6 +93,22 @@ void prepareOpenCl() {
         config->useGpu,
         config->verbose
     );
+
+    vector<ColourInt> colours = {
+        {0.0, {0, 10, 2}},
+        {0.05, {3, 34, 12}},
+        {0.2, {8, 76, 33}},
+        {0.4, {13, 117, 53}},
+        {0.7, {10, 172, 102}},
+        {0.84, {63, 216, 112}},
+        {0.92, {25, 236, 173}},
+        {1.0, {3, 34, 12}},
+    };
+
+    ColourMap cm(colours, config->num_colours);
+    unsigned int *cmap = (unsigned int *)malloc(3 * config->num_colours * sizeof(unsigned int));
+    cm.apply(cmap);
+    opencl->writeBuffer("colourMap", cmap);
 
     setKernelArgs();
 

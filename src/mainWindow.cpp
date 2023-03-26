@@ -282,7 +282,7 @@ void keyPressedMain(unsigned char key, int x, int y) {
             updateView();
             break;
         case ']':
-            viewMain.scaleY *= 1.2;
+            viewMain.scaleY /= 1.2;
             updateView();
             break;
 

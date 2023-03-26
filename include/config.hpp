@@ -23,6 +23,7 @@ public:
     unsigned int height = 720;
     unsigned int steps = 100;
     unsigned int anti_alias_samples = 2;
+    unsigned int num_colours = 1000;
 
     bool profile = true;
     bool verbose = true;
@@ -46,6 +47,7 @@ private:
         {"height", {'i', (void *)&height}},
         {"steps", {'i', (void *)&steps}},
         {"anti_alias_samples", {'i', (void *)&anti_alias_samples}},
+        {"num_colours", {'i', (void *)&num_colours}},
         {"scale", {'f', (void *)&scale}},
         {"center_x", {'f', (void *)&center_x}},
         {"center_y", {'f', (void *)&center_y}},

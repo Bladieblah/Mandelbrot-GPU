@@ -445,9 +445,25 @@ __kernel void mandelStep(global Particle *particles, unsigned int stepCount) {
     particles[gid] = tmp;
 }
 
+inline uint transform_count(uint count) {
+    return 100
+        + 11 * (count - (count % 121)) + count % 171
+        + ((count % 7) / 6) * 30
+        + (((count + 90) % 133) >> 7) * 500
+        + (((count + 12) % 31) >> 4) * 100
+        + (count % 2 & count % 5) * 70
+        - ((1 + count) % 2 & (count + 2) % 5) * 50
+        - ((count % 51) / 50) * 100
+        + count
+        + (count % 100)
+    ;
+}
+
 inline void add_particle(
     global Particle *particles,
-    global unsigned int *data,
+    global uint *data,
+    global uint *colourMap,
+    uint numColours,
     uint index,
     uint index_p,
     float issq
@@ -460,32 +476,41 @@ inline void add_particle(
 
     IntPair rad = cnorm2d(particles[index_p].pos);
     float count = (float)particles[index_p].iterCount + 1 - log(log(rad.integ + (float)rad.fract / INTPAIR_PRECISION)) / M_LN2;
+    // uint colorIndex = 3 * ((uint)(4 * count) % numColours);
+    uint colorIndex = 3 * (transform_count((uint)(8 * count)) / 2 % numColours);
     float ease = clamp(count * 0.03, 0., 1.) * issq;
+    
+    data[index]     += ease * colourMap[colorIndex];
+    data[index + 1] += ease * colourMap[colorIndex + 1];
+    data[index + 2] += ease * colourMap[colorIndex + 2];
 
-    float phase = count / 64.;
+
+    // float phase = count / 64.;
 
     // data[index]     += ease * pown(cos(phase), 2) * 0.7 * 2147483647;
     // data[index + 1] += ease * pown(sin(phase), 2) * 2147483647;
     // data[index + 2] += ease * pown(cos(phase + M_1_PI * 0.35), 2) * 1.5 * 2147483647;
 
-    float s = sin(phase) * 0.5;
-    float c = cos(phase);
+    // float s = sin(phase) * 0.5;
+    // float c = cos(phase);
 
-    float s2 = s * (0.5 + s);
-    float c2 = (0.8 + c * 0.2);
+    // float s2 = s * (0.5 + s);
+    // float c2 = (0.8 + c * 0.2);
 
-    float r = pown(clamp((c * c * c2 + s2 + 0.1) * 0.5, 0., 1.), 2);
-    float g = pown(clamp((c * c * c2 + s2 + 0.2) * 0.8, 0., 1.), 2);
-    float b = pown(clamp((c * c * (0.7 + c * 0.3) + s2 + 0.2) * 0.7, 0., 1.), 2);
+    // float r = pown(clamp((c * c * c2 + s2 + 0.1) * 0.5, 0., 1.), 2);
+    // float g = pown(clamp((c * c * c2 + s2 + 0.2) * 0.8, 0., 1.), 2);
+    // float b = pown(clamp((c * c * (0.7 + c * 0.3) + s2 + 0.2) * 0.7, 0., 1.), 2);
     
-    data[index]     += ease * r * UINT_MAX;
-    data[index + 1] += ease * g * UINT_MAX;
-    data[index + 2] += ease * b * UINT_MAX;
+    // data[index]     += ease * r * UINT_MAX;
+    // data[index + 1] += ease * g * UINT_MAX;
+    // data[index + 2] += ease * b * UINT_MAX;
 }
 
 __kernel void renderImage(
     global Particle *particles,
-    global unsigned int *data,
+    global uint *data,
+    global uint *colourMap,
+    uint numColours,
     uint superSample
 ) {
     const uint x = get_global_id(0);
@@ -499,13 +524,21 @@ __kernel void renderImage(
 
     for (int i = 0; i < superSample; i++) {
         for (int j = 0; j < superSample; j++) {
-            add_particle(particles, data, index, (superSample * W * (superSample * y + j) + superSample * x + i), issq);
+            add_particle(
+                particles,
+                data,
+                colourMap,
+                numColours,
+                index,
+                (superSample * W * (superSample * y + j) + superSample * x + i), 
+                issq
+            );
         }
     }
 }
 
 __kernel void resetImage(
-    global unsigned int *data
+    global uint *data
 ) {
     const uint x = get_global_id(0);
     const uint y = get_global_id(1);
