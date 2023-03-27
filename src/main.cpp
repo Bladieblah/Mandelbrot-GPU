@@ -102,12 +102,11 @@ void prepareOpenCl() {
         {0.2, {8, 76, 33}},
         {0.4, {13, 117, 53}},
         {0.7, {10, 172, 102}},
-        {0.84, {63, 216, 112}},
-        {0.92, {25, 236, 173}},
-        {1.0, {3, 34, 12}},
+        {0.9, {63, 216, 112}},
+        {1.0, {25, 236, 173}},
     };
 
-    ColourMap cm(colours, config->num_colours);
+    ColourMap cm(colours, config->num_colours, true);
     unsigned int *cmap = (unsigned int *)malloc(3 * config->num_colours * sizeof(unsigned int));
     cm.apply(cmap);
     opencl->writeBuffer("colourMap", cmap);

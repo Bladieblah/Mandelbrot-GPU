@@ -5,7 +5,7 @@
 
 using namespace std;
 
-ColourMap::ColourMap(vector<ColourFloat> colours, size_t size) {
+ColourMap::ColourMap(vector<ColourFloat> colours, size_t size, bool symmetric) {
     m_size = size;
 
     vector<float> x;
@@ -17,10 +17,10 @@ ColourMap::ColourMap(vector<ColourFloat> colours, size_t size) {
         y.push_back(tmp);
     }
     
-    generate(x, y);
+    generate(x, y, symmetric);
 }
 
-ColourMap::ColourMap(vector<ColourInt> colours, size_t size) {
+ColourMap::ColourMap(vector<ColourInt> colours, size_t size, bool symmetric) {
     m_size = size;
 
     vector<float> x;
@@ -36,17 +36,17 @@ ColourMap::ColourMap(vector<ColourInt> colours, size_t size) {
         y.push_back(tmp);
     }
     
-    generate(x, y);
+    generate(x, y, symmetric);
 }
 
-void ColourMap::generate(vector<float> x, vector< vector<float> > y) {
+void ColourMap::generate(vector<float> x, vector< vector<float> > y, bool symmetric) {
     Interp1d interp(x, y);
     
     float p = 0;
     float dp = 1. / (m_size - 1.);
     
     for (size_t i = 0; i < m_size; i++) {
-        vector<float> result = interp.getValue(p);
+        vector<float> result = interp.getValue(symmetric ? 1 - fabs(2 * p - 1) : p);
         map.push_back(result);
         
         p += dp;

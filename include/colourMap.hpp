@@ -15,8 +15,8 @@ typedef struct {
 
 class ColourMap {
 public:
-    ColourMap(std::vector<ColourFloat> colours, size_t size);
-    ColourMap(std::vector<ColourInt> colours, size_t size);
+    ColourMap(std::vector<ColourFloat> colours, size_t size, bool symmetric = false);
+    ColourMap(std::vector<ColourInt> colours, size_t size, bool symmetric = false);
     
     void apply(float *colourMap);
     void apply(unsigned int *colourMap);
@@ -25,7 +25,7 @@ public:
 private:
     size_t m_size;
     std::vector< std::vector<float> > map;
-    void generate(std::vector<float> x, std::vector< std::vector<float> > y);
+    void generate(std::vector<float> x, std::vector< std::vector<float> > y, bool symmetric);
 };
 
 #endif
