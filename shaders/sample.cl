@@ -316,8 +316,6 @@ inline void add_particle(
         return;
     }
 
-    particles[index_p].escaped++;
-
     float rad = cnorm2(particles[index_p].pos);
     float count = (float)particles[index_p].iterCount + 1 - log(log(rad)) / M_LN2;
     float ease = clamp(count * 0.03, 0., 1.) * issq;

@@ -1,9 +1,10 @@
-PROGNAME = a.out
+PROGNAME = mandelbrot.out
+
 SRCDIR = src/
 OBJDIR = obj/
 INCDIR = include/
 
-SRC	= $(wildcard $(SRCDIR)*.cpp)
+SRC = $(wildcard $(SRCDIR)*.cpp)
 
 CC = g++ -std=c++17
 
@@ -17,16 +18,22 @@ INCFILES = $(patsubst $(SRCDIR)%.cpp, $(INCDIR)%.hpp, $(SRC))
 
 .PHONY: all clean
 
-all: $(PROGNAME)
+all: $(PROGNAME) double_$(PROGNAME)
 
 $(PROGNAME): $(OBJFILES)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
+double_$(PROGNAME): $(OBJFILES:%.o=%_double.o)
+	$(CC) $(CFLAGS) -DUSE_DOUBLE -o $@ $^ $(LDFLAGS)
+
 $(OBJDIR)%.o: $(SRCDIR)%.cpp
 	$(CC) -c $(CFLAGS) -o $@ $<
 
+$(OBJDIR)%_double.o: $(SRCDIR)%.cpp
+	$(CC) -c $(CFLAGS) -DUSE_DOUBLE -o $@ $<
+
 clean:
-	rm -fv $(PROGNAME) $(OBJFILES)
-	rm -fv $(OBJDIR)*.d
+	rm -fv $(PROGNAME) $(PROGNAME)_double $(OBJFILES) $(OBJFILES:%.o=%.d) $(OBJFILES:%.o=%_double.o) $(OBJFILES:%.o=%_double.d)
 
 -include $(OBJFILES:.o=.d)
+-include $(OBJFILES:%.o=%_double.d)

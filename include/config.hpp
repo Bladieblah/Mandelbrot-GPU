@@ -4,8 +4,6 @@
 #include <map>
 #include <string>
 
-#define USE_DOUBLE
-
 #ifdef USE_DOUBLE
 #define float_type double
 #else
