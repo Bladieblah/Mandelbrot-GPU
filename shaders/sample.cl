@@ -304,9 +304,12 @@ __kernel void mandelStep(global Particle *particles, unsigned int stepCount) {
 
 inline void add_particle(
     global Particle *particles,
-    global unsigned int *data,
+    global uint *data,
+    global uint *colourMap,
+    uint numColours,
     uint index,
     uint index_p,
+    uint count0,
     float issq
 ) {
     if (particles[index_p].escaped != 1 || !particles[index_p].iterCount) {
@@ -328,7 +331,10 @@ inline void add_particle(
 
 __kernel void renderImage(
     global Particle *particles,
-    global unsigned int *data,
+    global uint *data,
+    global uint *colourMap,
+    uint numColours,
+    uint count0,
     uint superSample
 ) {
     const uint x = get_global_id(0);
@@ -340,25 +346,24 @@ __kernel void renderImage(
     int ssq = superSample * superSample;
     float issq = 1. / (float)ssq;
 
-    for (int i = 0; i < superSample; i++) {
-        for (int j = 0; j < superSample; j++) {
-            add_particle(particles, data, index, (superSample * W * (superSample * y + j) + superSample * x + i), issq);
-        }
-    }
-}
-
-__kernel void resetImage(
-    global unsigned int *data
-) {
-    const uint x = get_global_id(0);
-    const uint y = get_global_id(1);
-    const uint W = get_global_size(0);
-
-    int index = 3 * (W * y + x);
-
     data[index] = 0;
     data[index + 1] = 0;
     data[index + 2] = 0;
+
+    for (int i = 0; i < superSample; i++) {
+        for (int j = 0; j < superSample; j++) {
+            add_particle(
+                particles,
+                data,
+                colourMap,
+                numColours,
+                index,
+                (superSample * W * (superSample * y + j) + superSample * x + i), 
+                count0,
+                issq
+            );
+        }
+    }
 }
 
 // function setPixelHSV(x, y, h, s, v) {
