@@ -46,7 +46,6 @@ void createKernelSpecs() {
         {"initParticles", {NULL, 2, {superSample * config->width, superSample * config->height}, {0, 0}, "initParticles"}},
         {"mandelStep",    {NULL, 2, {superSample * config->width, superSample * config->height}, {0, 0}, "mandelStep"}},
         {"renderImage",   {NULL, 2, {config->width, config->height}, {0, 0}, "renderImage"}},
-        {"resetImage",    {NULL, 2, {config->width, config->height}, {0, 0}, "resetImage"}},
     };
 }
 
@@ -75,8 +74,6 @@ void setKernelArgs() {
     opencl->setKernelArg("renderImage", 3, sizeof(unsigned int), &(config->num_colours));
     opencl->setKernelArg("renderImage", 4, sizeof(unsigned int), &zero);
     opencl->setKernelArg("renderImage", 5, sizeof(unsigned int), &superSample);
-    
-    opencl->setKernelBufferArg("resetImage", 0, "image");
 }
 
 void prepareOpenCl() {
@@ -113,7 +110,6 @@ void prepareOpenCl() {
 
     setKernelArgs();
 
-    opencl->step("resetImage");
     opencl->step("initParticles");
 }
 

@@ -33,7 +33,7 @@ void OpenCl::prepare(vector<BufferSpec> bufferSpecs, vector<KernelSpec> kernelSp
     }
     
     source_str = (char *)malloc(MAX_SOURCE_SIZE);
-    source_size = fread(source_str, 1, MAX_SOURCE_SIZE, fp);
+    source_size = fread(source_str, sizeof(char), MAX_SOURCE_SIZE, fp);
     fclose(fp);
     
     setDevice();

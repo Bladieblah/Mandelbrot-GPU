@@ -176,7 +176,6 @@ void updateView() {
 #else
     opencl->setKernelArg("initParticles", 1, sizeof(ViewSettings), &(viewMain));
 #endif
-    opencl->step("resetImage");
     opencl->step("initParticles");
 }
 
@@ -266,7 +265,6 @@ void keyPressedMain(unsigned char key, int x, int y) {
 #else
                 opencl->setKernelArg("initParticles", 1, sizeof(ViewSettings), &(viewMain));
 #endif
-                opencl->step("resetImage");
                 opencl->step("initParticles");
             }
             break;
@@ -299,7 +297,6 @@ void keyPressedMain(unsigned char key, int x, int y) {
             break;
 
         case 'R':
-            opencl->step("resetImage");
             opencl->step("initParticles");
             break;
 

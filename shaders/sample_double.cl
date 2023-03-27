@@ -472,11 +472,6 @@ inline void add_particle(
     if (!particles[index_p].escaped || !particles[index_p].iterCount) {
         return;
     }
-    // if (particles[index_p].escaped != 1 || !particles[index_p].iterCount) {
-    //     return;
-    // }
-
-    // particles[index_p].escaped++;
 
     IntPair rad = cnorm2d(particles[index_p].pos);
     float count = (float)particles[index_p].iterCount + 1 - log(log(rad.integ + (float)rad.fract / INTPAIR_PRECISION)) / M_LN2;
@@ -487,27 +482,6 @@ inline void add_particle(
     data[index]     += ease * colourMap[colorIndex];
     data[index + 1] += ease * colourMap[colorIndex + 1];
     data[index + 2] += ease * colourMap[colorIndex + 2];
-
-
-    // float phase = count / 64.;
-
-    // data[index]     += ease * pown(cos(phase), 2) * 0.7 * 2147483647;
-    // data[index + 1] += ease * pown(sin(phase), 2) * 2147483647;
-    // data[index + 2] += ease * pown(cos(phase + M_1_PI * 0.35), 2) * 1.5 * 2147483647;
-
-    // float s = sin(phase) * 0.5;
-    // float c = cos(phase);
-
-    // float s2 = s * (0.5 + s);
-    // float c2 = (0.8 + c * 0.2);
-
-    // float r = pown(clamp((c * c * c2 + s2 + 0.1) * 0.5, 0., 1.), 2);
-    // float g = pown(clamp((c * c * c2 + s2 + 0.2) * 0.8, 0., 1.), 2);
-    // float b = pown(clamp((c * c * (0.7 + c * 0.3) + s2 + 0.2) * 0.7, 0., 1.), 2);
-    
-    // data[index]     += ease * r * UINT_MAX;
-    // data[index + 1] += ease * g * UINT_MAX;
-    // data[index + 2] += ease * b * UINT_MAX;
 }
 
 __kernel void renderImage(
@@ -545,18 +519,4 @@ __kernel void renderImage(
             );
         }
     }
-}
-
-__kernel void resetImage(
-    global uint *data
-) {
-    const uint x = get_global_id(0);
-    const uint y = get_global_id(1);
-    const uint W = get_global_size(0);
-
-    int index = 3 * (W * y + x);
-
-    data[index] = 0;
-    data[index + 1] = 0;
-    data[index + 2] = 0;
 }
