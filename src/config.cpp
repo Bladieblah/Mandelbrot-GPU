@@ -90,7 +90,7 @@ void Config::printSetting(string name, Setting setting) {
         fprintf(stderr, "%s = %d\n", name.c_str(), *(int *)setting.pointer);
         break;
     case 'f':
-        fprintf(stderr, "%s = %.2g\n", name.c_str(), *(float *)setting.pointer);
+        fprintf(stderr, "%s = %.2g\n", name.c_str(), *(float_type *)setting.pointer);
         break;
     case 'b':
         fprintf(stderr, "%s = %s\n", name.c_str(), *(bool *)setting.pointer ? "true" : "false");
