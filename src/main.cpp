@@ -93,7 +93,13 @@ void prepareOpenCl() {
         config->verbose
     );
 
-    ColourMap cm = ColourMapFromFile("colourmaps/default.cm", config->num_colours);
+    char filename[120] = "colourmaps/default.cm";
+    if (strlen(config->colour_file)) {
+        fprintf(stderr, "Writing fn\n");
+        sprintf(filename, "colourmaps/%s", config->colour_file);
+        fprintf(stderr, "Writing fn done\n");
+    }
+    ColourMap cm = ColourMapFromFile(filename, config->num_colours);
     unsigned int *cmap = (unsigned int *)malloc(3 * config->num_colours * sizeof(unsigned int));
     cm.apply(cmap);
     opencl->writeBuffer("colourMap", cmap);

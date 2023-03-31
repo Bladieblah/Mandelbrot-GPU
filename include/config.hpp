@@ -27,6 +27,8 @@ public:
     bool verbose = true;
     bool useGpu = true;
 
+    char colour_file[100];
+
     float_type scale = 1.3;
     float_type center_x = -0.5;
     float_type center_y = 0.;
@@ -53,6 +55,7 @@ private:
         {"profile", {'b', (void *)&profile}},
         {"verbose", {'b', (void *)&verbose}},
         {"useGpu", {'b', (void *)&useGpu}},
+        {"colour_file", {'s', (void *)colour_file}},
     };
 };
 

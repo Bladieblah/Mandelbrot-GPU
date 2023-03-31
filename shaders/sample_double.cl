@@ -475,8 +475,8 @@ inline void add_particle(
 
     IntPair rad = cnorm2d(particles[index_p].pos);
     float count = (float)particles[index_p].iterCount + 1 - log(log(rad.integ + (float)rad.fract / INTPAIR_PRECISION)) / M_LN2;
-    // uint colorIndex = 3 * ((uint)(4 * count) % numColours);
-    uint colorIndex = 3 * (transform_count((uint)(8 * count), count0) / 2 % numColours);
+    uint colorIndex = 3 * ((uint)(4 * count) % numColours);
+    // uint colorIndex = 3 * (transform_count((uint)(8 * count), count0) / 2 % numColours);
     float ease = clamp(count * 0.03, 0., 1.) * issq;
     
     data[index]     += ease * colourMap[colorIndex];
