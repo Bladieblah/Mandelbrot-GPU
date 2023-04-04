@@ -205,8 +205,13 @@ void writeData() {
     FILE *outFile;
     char filename[200];
 
+#ifdef MANDEL_GPU_USE_DOUBLE
     sprintf(filename, "raw_images/weighted_%lu_%lu_%.6f_%.6f_%.6f_%.6f_%d.csv", 
         viewMain.sizeX, viewMain.sizeY, viewMain.scaleY, viewMain.theta, viewMain.centerX, viewMain.centerY, count0);
+#else
+    sprintf(filename, "raw_images/weighted_%d_%d_%.6f_%.6f_%.6f_%.6f_%d.csv", 
+        viewMain.sizeX, viewMain.sizeY, viewMain.scaleY, viewMain.theta, viewMain.centerX, viewMain.centerY, count0);
+#endif
     
     outFile = fopen(filename, "w");
 
