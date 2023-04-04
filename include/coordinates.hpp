@@ -4,7 +4,7 @@
 #include "config.hpp"
 #include "mainWindow.hpp"
 
-#ifdef USE_DOUBLE
+#ifdef MANDEL_GPU_USE_DOUBLE
 #define float_type double
 #else
 #define float_type float

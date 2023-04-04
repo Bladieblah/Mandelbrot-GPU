@@ -24,13 +24,13 @@ $(PROGNAME): $(OBJFILES)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 double_$(PROGNAME): $(OBJFILES:%.o=%_double.o)
-	$(CC) $(CFLAGS) -DUSE_DOUBLE -o $@ $^ $(LDFLAGS)
+	$(CC) $(CFLAGS) -DMANDEL_GPU_USE_DOUBLE -o $@ $^ $(LDFLAGS)
 
 $(OBJDIR)%.o: $(SRCDIR)%.cpp
 	$(CC) -c $(CFLAGS) -o $@ $<
 
 $(OBJDIR)%_double.o: $(SRCDIR)%.cpp
-	$(CC) -c $(CFLAGS) -DUSE_DOUBLE -o $@ $<
+	$(CC) -c $(CFLAGS) -DMANDEL_GPU_USE_DOUBLE -o $@ $<
 
 clean:
 	rm -fv $(PROGNAME) $(PROGNAME)_double $(OBJFILES) $(OBJFILES:%.o=%.d) $(OBJFILES:%.o=%_double.o) $(OBJFILES:%.o=%_double.d)

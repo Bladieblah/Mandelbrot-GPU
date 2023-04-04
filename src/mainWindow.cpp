@@ -21,7 +21,7 @@ std::stack<ViewSettings> viewStackMain;
 bool selecting = true;
 unsigned int count0 = 0;
 
-#ifdef USE_DOUBLE
+#ifdef MANDEL_GPU_USE_DOUBLE
 ViewSettingsCL viewMainCL;
 #endif
 
@@ -170,7 +170,7 @@ void updateView() {
     viewMain.cosTheta = cos(viewMain.theta);
     viewMain.sinTheta = sin(viewMain.theta);
     
-#ifdef USE_DOUBLE
+#ifdef MANDEL_GPU_USE_DOUBLE
     transformView();
     opencl->setKernelArg("initParticles", 1, sizeof(ViewSettingsCL), &(viewMainCL));
 #else
@@ -259,7 +259,7 @@ void keyPressedMain(unsigned char key, int x, int y) {
             if (!viewStackMain.empty()) {
                 viewMain = viewStackMain.top();
                 viewStackMain.pop();
-#ifdef USE_DOUBLE
+#ifdef MANDEL_GPU_USE_DOUBLE
                 transformView();
                 opencl->setKernelArg("initParticles", 1, sizeof(ViewSettingsCL), &(viewMainCL));
 #else
@@ -396,7 +396,7 @@ void destroyMainWindow() {
     free(pixelsMain);
 }
 
-#ifdef USE_DOUBLE
+#ifdef MANDEL_GPU_USE_DOUBLE
 IntPair to_pair(double num) {
     unsigned int sign = num >= 0;
     uint64_t inum = (uint64_t)fabs(num);

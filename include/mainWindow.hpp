@@ -4,7 +4,7 @@
 #include "config.hpp"
 #include "opencl.hpp"
 
-#ifdef USE_DOUBLE
+#ifdef MANDEL_GPU_USE_DOUBLE
 typedef struct IntPair {
     unsigned int sign;
     unsigned long integ;

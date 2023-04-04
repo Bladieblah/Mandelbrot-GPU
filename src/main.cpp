@@ -49,7 +49,7 @@ void createKernelSpecs() {
     };
 }
 
-#ifdef USE_DOUBLE
+#ifdef MANDEL_GPU_USE_DOUBLE
 double to_double(IntPair num) {
     return (num.sign ? 1 : -1) * ((double)num.integ + (((double)num.fract) / (~0ULL)));
 }
@@ -57,7 +57,7 @@ double to_double(IntPair num) {
 
 void setKernelArgs() {
     opencl->setKernelBufferArg("initParticles", 0, "particles");
-#ifdef USE_DOUBLE
+#ifdef MANDEL_GPU_USE_DOUBLE
     transformView();
     opencl->setKernelArg("initParticles", 1, sizeof(ViewSettingsCL), &(viewMainCL));
 #else
@@ -81,7 +81,7 @@ void prepareOpenCl() {
     createKernelSpecs();
 
     opencl = new OpenCl(
-#ifdef USE_DOUBLE
+#ifdef MANDEL_GPU_USE_DOUBLE
         "shaders/sample_double.cl",
 #else
         "shaders/sample.cl",
@@ -111,7 +111,7 @@ void prepareOpenCl() {
 
 void prepare() {
 
-    #ifdef USE_DOUBLE
+    #ifdef MANDEL_GPU_USE_DOUBLE
     float scaleY = config->scale;
     viewMain = {
         scaleY / (double)config->height * (double)config->width, scaleY,
