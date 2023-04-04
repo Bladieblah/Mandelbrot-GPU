@@ -40,3 +40,4 @@
 
 .vscode/
 notebooks/
+*.ini

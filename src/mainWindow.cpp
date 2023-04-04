@@ -390,6 +390,7 @@ void createMainWindow(char *name, uint32_t width, uint32_t height) {
         pixelsMain[i] = 0;
     }
     
+    glutDisplayFunc(&displayMain);
     glutKeyboardFunc(&keyPressedMain);
     glutSpecialFunc(&specialKeyPressedMain);
     glutMouseFunc(&mousePressedMain);

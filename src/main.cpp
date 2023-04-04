@@ -8,6 +8,7 @@
 
 #include "colourMap.hpp"
 #include "config.hpp"
+#include "gradientWindow.hpp"
 #include "mainWindow.hpp"
 #include "opencl.hpp"
 #include "pcg.hpp"
@@ -146,6 +147,7 @@ void display() {
     opencl->startFrame();
     
     displayMain();
+    displayGradient();
 
     opencl->step("mandelStep");
     opencl->step("renderImage");
@@ -180,6 +182,7 @@ int main(int argc, char **argv) {
 
     glutInit(&argc, argv);
     createMainWindow("Main", config->width, config->height);
+    createGradientWindow();
     glutDisplayFunc(&display);
 
     glutIdleFunc(&display);
