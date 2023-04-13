@@ -21,14 +21,18 @@ public:
     
     void apply(float *colourMap);
     void apply(unsigned int *colourMap);
-    std::vector<float> get(float p);
+    size_t getColorCount();
 
 private:
     size_t m_size;
+    size_t m_color_count;
     std::vector< std::vector<float> > map;
     void generate(std::vector<float> x, std::vector< std::vector<float> > y, bool symmetric);
+    std::vector<float> get(float p);
 };
 
-ColourMap ColourMapFromFile(char *fn, size_t size);
+ColourMap *ColourMapFromFile(char *fn, size_t size);
+extern unsigned int *cmap;
+extern ColourMap *cm;
 
 #endif

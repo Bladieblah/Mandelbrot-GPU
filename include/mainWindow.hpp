@@ -76,6 +76,5 @@ extern ViewSettings viewMain, defaultView;
 extern WindowSettings settingsMain;
 extern uint32_t *pixelsMain;
 extern OpenCl *opencl;
-extern Config *config;
 
 #endif

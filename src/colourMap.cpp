@@ -16,8 +16,9 @@ vector<ColourInt> defaultColours = {
     {1.0, {25, 236, 173}},
 };
 
+// --------------------------- IO ---------------------------
 
-ColourMap ColourMapFromInt(FILE *f, size_t size, bool symmetric) {
+ColourMap *ColourMapFromInt(FILE *f, size_t size, bool symmetric) {
     ColourInt tmp;
     vector<ColourInt> colours;
 
@@ -25,10 +26,10 @@ ColourMap ColourMapFromInt(FILE *f, size_t size, bool symmetric) {
         colours.push_back(ColourInt(tmp));
     }
 
-    return ColourMap(colours, size, symmetric);
+    return new ColourMap(colours, size, symmetric);
 }
 
-ColourMap ColourMapFromFloat(FILE *f, size_t size, bool symmetric) {
+ColourMap *ColourMapFromFloat(FILE *f, size_t size, bool symmetric) {
     ColourFloat tmp;
     vector<ColourFloat> colours;
 
@@ -36,10 +37,10 @@ ColourMap ColourMapFromFloat(FILE *f, size_t size, bool symmetric) {
         colours.push_back(ColourFloat(tmp));
     }
 
-    return ColourMap(colours, size, symmetric);
+    return new ColourMap(colours, size, symmetric);
 }
 
-ColourMap ColourMapFromFile(char *fn, size_t size) {
+ColourMap *ColourMapFromFile(char *fn, size_t size) {
     FILE *f;
     char kind = 'a';
     int symmetric = 0;
@@ -48,12 +49,12 @@ ColourMap ColourMapFromFile(char *fn, size_t size) {
 
     if (!f) {
         fprintf(stderr, "Error loading cm.\n");
-        return ColourMap(defaultColours, size, false);
+        return new ColourMap(defaultColours, size, false);
     }
 
     if (fscanf(f, "kind = %c\n", &kind) == EOF || fscanf(f, "symmetric = %d\n", &symmetric) == EOF) {
         fprintf(stderr, "Error loading cm.\n");
-        return ColourMap(defaultColours, size, false);
+        return new ColourMap(defaultColours, size, false);
     }
 
     switch (kind) {
@@ -66,11 +67,14 @@ ColourMap ColourMapFromFile(char *fn, size_t size) {
     }
 
     fprintf(stderr, "Error loading cm.\n");
-    return ColourMap(defaultColours, size, true);
+    return new ColourMap(defaultColours, size, true);
 }
+
+// --------------------------- Class implementation ---------------------------
 
 ColourMap::ColourMap(vector<ColourFloat> colours, size_t size, bool symmetric) {
     m_size = size;
+    m_color_count = colours.size();
 
     vector<float> x;
     vector< vector<float> > y;
@@ -86,6 +90,7 @@ ColourMap::ColourMap(vector<ColourFloat> colours, size_t size, bool symmetric) {
 
 ColourMap::ColourMap(vector<ColourInt> colours, size_t size, bool symmetric) {
     m_size = size;
+    m_color_count = colours.size();
 
     vector<float> x;
     vector< vector<float> > y;
@@ -137,4 +142,8 @@ void ColourMap::apply(unsigned int *colourMap) {
             colourMap[3 * i + j] = (unsigned int)(map[i][j] * UINT_MAX);
         }
     }
+}
+
+size_t ColourMap::getColorCount() {
+    return m_color_count;
 }

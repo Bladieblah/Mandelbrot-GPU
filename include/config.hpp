@@ -59,4 +59,6 @@ private:
     };
 };
 
+extern Config *config;
+
 #endif

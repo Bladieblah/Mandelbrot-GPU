@@ -20,6 +20,8 @@ using namespace std;
  */
 
 Config *config;
+unsigned int *cmap;
+ColourMap *cm;
 
 chrono::high_resolution_clock::time_point frameTime;
 unsigned int frameCount = 0;
@@ -100,9 +102,9 @@ void prepareOpenCl() {
         sprintf(filename, "colourmaps/%s", config->colour_file);
         fprintf(stderr, "Writing fn done\n");
     }
-    ColourMap cm = ColourMapFromFile(filename, config->num_colours);
-    unsigned int *cmap = (unsigned int *)malloc(3 * config->num_colours * sizeof(unsigned int));
-    cm.apply(cmap);
+    cm = ColourMapFromFile(filename, config->num_colours);
+    cmap = (unsigned int *)malloc(3 * config->num_colours * sizeof(unsigned int));
+    cm->apply(cmap);
     opencl->writeBuffer("colourMap", cmap);
 
     setKernelArgs();
@@ -146,8 +148,8 @@ void display() {
 
     opencl->startFrame();
     
-    displayMain();
     displayGradient();
+    displayMain();
 
     opencl->step("mandelStep");
     opencl->step("renderImage");
