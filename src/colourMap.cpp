@@ -75,25 +75,25 @@ ColourMap *ColourMapFromFile(char *fn, size_t size) {
 ColourMap::ColourMap(vector<ColourFloat> colours, size_t size, bool symmetric) {
     m_size = size;
     m_color_count = colours.size();
+    m_symmetric = symmetric;
 
-    vector<float> x;
-    vector< vector<float> > y;
+    map.reserve(m_size);
 
     for (ColourFloat colour : colours) {
         vector<float> tmp(colour.rgb, colour.rgb + 3 * sizeof(float));
-        x.push_back(colour.x);
-        y.push_back(tmp);
+        m_x.push_back(colour.x);
+        m_y.push_back(tmp);
     }
     
-    generate(x, y, symmetric);
+    generate();
 }
 
 ColourMap::ColourMap(vector<ColourInt> colours, size_t size, bool symmetric) {
     m_size = size;
     m_color_count = colours.size();
+    m_symmetric = symmetric;
 
-    vector<float> x;
-    vector< vector<float> > y;
+    map.reserve(m_size);
 
     for (ColourInt colour : colours) {
         vector<float> tmp;
@@ -101,22 +101,23 @@ ColourMap::ColourMap(vector<ColourInt> colours, size_t size, bool symmetric) {
             tmp.push_back((float)colour.rgb[i] / 255.);
         }
         
-        x.push_back(colour.x);
-        y.push_back(tmp);
+        m_x.push_back(colour.x);
+        m_y.push_back(tmp);
     }
     
-    generate(x, y, symmetric);
+    generate();
 }
 
-void ColourMap::generate(vector<float> x, vector< vector<float> > y, bool symmetric) {
-    Interp1d interp(x, y);
+void ColourMap::generate() {
+    // fprintf(stderr, "%.2f, %.2f, %.2f\n", m_y[0][0], m_y[0][1], m_y[0][2]);
+    Interp1d interp(m_x, m_y);
     
     float p = 0;
     float dp = 1. / (m_size - 1.);
     
     for (size_t i = 0; i < m_size; i++) {
-        vector<float> result = interp.getValue(symmetric ? 1 - fabs(2 * p - 1) : p);
-        map.push_back(result);
+        vector<float> result = interp.getValue(m_symmetric ? 1 - fabs(2 * p - 1) : p);
+        map[i] = result;
         
         p += dp;
     }

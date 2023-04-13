@@ -8,14 +8,13 @@
 
 #include "colourMap.hpp"
 #include "config.hpp"
+#include "opencl.hpp"
 
 using namespace std;
 
 
 int windowIdGradient;
 uint32_t *pixelsGradient;
-
-float col1[3];
 
 void fill_gradient() {
 
@@ -61,17 +60,16 @@ void displayGradient() {
     ImGui_ImplOpenGL2_NewFrame();
     ImGui_ImplGLUT_NewFrame();
 
+    bool changed = false;
     for (size_t i = 0; i < cm->getColorCount(); i++) {
-        if (ImGui::ColorPicker3("Test Picker", col1, ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_DisplayHSV)) {
-            fprintf(stderr, "%f,%f,%f\n", col1[0], col1[1], col1[2]);
-        }
+        changed |= ImGui::ColorPicker3("Test Picker", cm->m_y[i].data(), ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_DisplayHSV);
     }
 
-    // bool changed = false;
-
-    // if () {
-    //     updateColormap();
-    // }
+    if (changed) {
+        cm->generate();
+        cm->apply(cmap);
+        opencl->writeBuffer("colourMap", cmap);
+    }
 
     // --------------------------- DRAW ---------------------------
     ImGui::Render();

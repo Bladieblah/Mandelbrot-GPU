@@ -23,11 +23,15 @@ public:
     void apply(unsigned int *colourMap);
     size_t getColorCount();
 
+    std::vector<float> m_x;
+    std::vector< std::vector<float> > m_y;
+    void generate();
 private:
     size_t m_size;
     size_t m_color_count;
+    bool m_symmetric;
+
     std::vector< std::vector<float> > map;
-    void generate(std::vector<float> x, std::vector< std::vector<float> > y, bool symmetric);
     std::vector<float> get(float p);
 };
 
