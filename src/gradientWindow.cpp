@@ -60,10 +60,23 @@ void displayGradient() {
     ImGui_ImplOpenGL2_NewFrame();
     ImGui_ImplGLUT_NewFrame();
 
+    ImGui::SetNextWindowSize(ImVec2(200, 0));
+    ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 200, 0));
+
+    ImGui::Begin("Gradient colors");
+    ImGui::PushItemWidth(140);
+
     bool changed = false;
+    char label[100];
     for (size_t i = 0; i < cm->getColorCount(); i++) {
-        changed |= ImGui::ColorPicker3("Test Picker", cm->m_y[i].data(), ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_DisplayHSV);
+        sprintf(label, "Color %zu", i);
+        if (ImGui::TreeNode(label)) {
+            changed |= ImGui::ColorPicker3("", cm->m_y[i].data(), ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_DisplayHSV | ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_NoLabel);
+            ImGui::TreePop();
+        }
     }
+
+    ImGui::End();
 
     if (changed) {
         cm->generate();
