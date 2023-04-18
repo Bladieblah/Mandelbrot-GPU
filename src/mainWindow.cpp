@@ -7,6 +7,12 @@
 #include <OpenGL/glu.h>
 #include <GLUT/glut.h>
 
+#include "../imgui/imgui.h"
+#include "../imgui/backends/imgui_impl_glut.h"
+#include "../imgui/backends/imgui_impl_opengl2.h"
+
+#include "colourMap.hpp"
+#include "config.hpp"
 #include "coordinates.hpp"
 #include "mainWindow.hpp"
 #include "opencl.hpp"
@@ -19,6 +25,7 @@ MouseState mouseMain;
 ViewSettings viewMain, defaultView;
 std::stack<ViewSettings> viewStackMain;
 bool selecting = true;
+bool drawGradient = true;
 unsigned int count0 = 0;
 
 #ifdef MANDEL_GPU_USE_DOUBLE
@@ -108,7 +115,10 @@ void drawPath() {
 }
 
 void displayMain() {
+    // --------------------------- RESET ---------------------------
     glutSetWindow(windowIdMain);
+
+    ImGuiIO& io = ImGui::GetIO();
 
     glClearColor( 0, 0, 0, 1 );
     glColor3f(1, 1, 1);
@@ -116,6 +126,8 @@ void displayMain() {
 
     glEnable (GL_TEXTURE_2D);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    
+    // --------------------------- FRACTAL ---------------------------
 
     glTexImage2D (
         GL_TEXTURE_2D,
@@ -142,7 +154,7 @@ void displayMain() {
 
     glDisable (GL_TEXTURE_2D);
 
-    if (mouseMain.state == GLUT_DOWN && !selecting) {
+    if (!io.WantCaptureMouse && mouseMain.state == GLUT_DOWN && !selecting) {
         drawPath();
     }
 
@@ -152,10 +164,70 @@ void displayMain() {
         drawGrid();
     }
 
-    if (mouseMain.state == GLUT_DOWN && selecting) {
+    if (!io.WantCaptureMouse && mouseMain.state == GLUT_DOWN && selecting) {
         drawBox();
     }
+    
+    // --------------------------- GRADIENT ---------------------------
 
+    if (drawGradient) {
+        glEnable (GL_TEXTURE_2D);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+        glTexImage2D (
+            GL_TEXTURE_2D,
+            0,
+            GL_RGB,
+            config->num_colours,
+            1,
+            0,
+            GL_RGB,
+            GL_UNSIGNED_INT,
+            &(cmap[0])
+        );
+
+        glBegin(GL_QUADS);
+            glTexCoord2f(0.0f, 0.0f); glVertex2f(-1.0, -1.0);
+            glTexCoord2f(1.0f, 0.0f); glVertex2f(-1.0,  1.0);
+            glTexCoord2f(1.0f, 1.0f); glVertex2f(-0.8,  1.0);
+            glTexCoord2f(0.0f, 1.0f); glVertex2f(-0.8, -1.0);
+        glEnd();
+
+        glDisable (GL_TEXTURE_2D);
+    }
+
+    // --------------------------- IMGUI ---------------------------
+
+    ImGui_ImplOpenGL2_NewFrame();
+    ImGui_ImplGLUT_NewFrame();
+
+    ImGui::SetNextWindowSize(ImVec2(200, 0));
+    ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 200, 0));
+
+    ImGui::Begin("Gradient colors");
+    ImGui::PushItemWidth(140);
+
+    bool changed = false;
+    char label[100];
+    for (size_t i = 0; i < cm->getColorCount(); i++) {
+        sprintf(label, "Color %zu", i);
+        if (ImGui::TreeNode(label)) {
+            changed |= ImGui::ColorPicker3("", cm->m_y[i].data(), ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_DisplayHSV | ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_NoLabel);
+            ImGui::TreePop();
+        }
+    }
+
+    ImGui::End();
+
+    if (changed) {
+        cm->generate();
+        cm->apply(cmap);
+        opencl->writeBuffer("colourMap", cmap);
+    }
+
+    // --------------------------- DRAW ---------------------------
+    ImGui::Render();
+    ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
     glFlush();
     glutSwapBuffers();
 }
@@ -180,7 +252,8 @@ void updateView() {
 }
 
 void selectRegion() {
-    if (mouseMain.state != GLUT_DOWN) {
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.WantCaptureMouse || mouseMain.state != GLUT_DOWN) {
         return;
     }
 
@@ -251,6 +324,9 @@ void keyPressedMain(unsigned char key, int x, int y) {
         
         case 'g':
             settingsMain.grid = ! settingsMain.grid;
+            break;
+        case 'h':
+            drawGradient = ! drawGradient;
             break;
         case 'b':
             selecting = ! selecting;
@@ -345,7 +421,10 @@ void translateCamera(ScreenCoordinate coords) {
 }
 
 void mousePressedMain(int button, int state, int x, int y) {
-    if (button == GLUT_RIGHT_BUTTON) {
+    ImGuiIO& io = ImGui::GetIO();
+    ImGui_ImplGLUT_MouseFunc(button, state, x, y);
+
+    if (!io.WantCaptureMouse && button == GLUT_RIGHT_BUTTON) {
         if (state == GLUT_DOWN) {
             translateCamera((ScreenCoordinate){x, y});
         }
@@ -362,11 +441,15 @@ void mousePressedMain(int button, int state, int x, int y) {
 }
 
 void mouseMovedMain(int x, int y) {
+    ImGui_ImplGLUT_MotionFunc(x, y);
+
     mouseMain.x = x;
     mouseMain.y = y;
 }
 
 void onReshapeMain(int w, int h) {
+    ImGui_ImplGLUT_ReshapeFunc(w, h);
+
     settingsMain.windowW = w;
     settingsMain.windowH = h;
 
@@ -391,6 +474,17 @@ void createMainWindow(char *name, uint32_t width, uint32_t height) {
     }
     
     glutDisplayFunc(&displayMain);
+
+    // Setup Dear ImGui context
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO &io = ImGui::GetIO(); (void)io;
+
+    // Setup Dear ImGui style
+    ImGui::StyleColorsDark();
+    ImGui_ImplGLUT_Init();
+    ImGui_ImplOpenGL2_Init();
+    
     glutKeyboardFunc(&keyPressedMain);
     glutSpecialFunc(&specialKeyPressedMain);
     glutMouseFunc(&mousePressedMain);
