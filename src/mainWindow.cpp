@@ -209,10 +209,15 @@ void displayMain() {
 
     bool changed = false;
     char label[100];
+    // static float kut;
     for (size_t i = 0; i < cm->getColorCount(); i++) {
         sprintf(label, "Color %zu", i);
         if (ImGui::TreeNode(label)) {
-            changed |= ImGui::ColorPicker3("", cm->m_y[i].data(), ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_DisplayHSV | ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_NoLabel);
+            // kut = cm->m_x[i];
+            sprintf(label, "##picker %zu", i);
+            changed |= ImGui::ColorPicker3(label, cm->m_y[i].data(), ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_DisplayHSV | ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_NoLabel);
+            sprintf(label, "##slider %zu", i);
+            changed |= ImGui::SliderFloat(label, &(cm->m_x.data()[i]), 0., 1.);
             ImGui::TreePop();
         }
     }
@@ -479,11 +484,16 @@ void createMainWindow(char *name, uint32_t width, uint32_t height) {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO &io = ImGui::GetIO(); (void)io;
+    io.IniFilename = NULL;
 
     // Setup Dear ImGui style
     ImGui::StyleColorsDark();
     ImGui_ImplGLUT_Init();
     ImGui_ImplOpenGL2_Init();
+
+    glutPassiveMotionFunc(ImGui_ImplGLUT_MotionFunc);
+    glutKeyboardUpFunc(ImGui_ImplGLUT_KeyboardUpFunc);
+    glutSpecialUpFunc(ImGui_ImplGLUT_SpecialUpFunc);
     
     glutKeyboardFunc(&keyPressedMain);
     glutSpecialFunc(&specialKeyPressedMain);
