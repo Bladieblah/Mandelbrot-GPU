@@ -148,3 +148,19 @@ void ColourMap::apply(unsigned int *colourMap) {
 size_t ColourMap::getColorCount() {
     return m_color_count;
 }
+
+void ColourMap::save(char *fn) {
+    fprintf(stderr, "Saving to %s          \n", fn);
+    FILE *outFile = fopen(fn, "w");
+    
+    if (outFile) {
+        fprintf(outFile, "kind = f\n");
+        fprintf(outFile, "symmetric = %d\n", (int)m_symmetric);
+
+        for (int i = 0; i < m_color_count; i++) {
+            fprintf(outFile, "%f, {%f, %f, %f}\n", m_x[i], m_y[i][0], m_y[i][1], m_y[i][2]);
+        }
+
+        fclose(outFile);
+    }
+}

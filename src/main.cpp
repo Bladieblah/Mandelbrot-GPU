@@ -110,6 +110,7 @@ void prepareOpenCl() {
     setKernelArgs();
 
     opencl->step("initParticles");
+    fprintf(stderr, "End initparticles\n");
 }
 
 void prepare() {
@@ -180,13 +181,18 @@ int main(int argc, char **argv) {
 
     prepare();
 
+    fprintf(stderr, "atexit\n");
     atexit(&cleanAll);
 
+    fprintf(stderr, "glutInit\n");
     glutInit(&argc, argv);
+    fprintf(stderr, "createMainWindow\n");
     createMainWindow("Main", config->width, config->height);
     // createGradientWindow();
+    fprintf(stderr, "glutDisplayFunc\n");
     glutDisplayFunc(&display);
 
+    fprintf(stderr, "glutIdleFunc\n");
     glutIdleFunc(&display);
 
     fprintf(stderr, "\nStarting main loop\n\n");

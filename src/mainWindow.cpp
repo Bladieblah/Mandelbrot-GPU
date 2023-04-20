@@ -27,6 +27,7 @@ std::stack<ViewSettings> viewStackMain;
 bool selecting = true;
 bool drawGradient = true;
 unsigned int count0 = 0;
+char colourmap_filename[60];
 
 #ifdef MANDEL_GPU_USE_DOUBLE
 ViewSettingsCL viewMainCL;
@@ -189,8 +190,8 @@ void displayMain() {
         glBegin(GL_QUADS);
             glTexCoord2f(0.0f, 0.0f); glVertex2f(-1.0, -1.0);
             glTexCoord2f(1.0f, 0.0f); glVertex2f(-1.0,  1.0);
-            glTexCoord2f(1.0f, 1.0f); glVertex2f(-0.8,  1.0);
-            glTexCoord2f(0.0f, 1.0f); glVertex2f(-0.8, -1.0);
+            glTexCoord2f(1.0f, 1.0f); glVertex2f(-0.9,  1.0);
+            glTexCoord2f(0.0f, 1.0f); glVertex2f(-0.9, -1.0);
         glEnd();
 
         glDisable (GL_TEXTURE_2D);
@@ -220,6 +221,13 @@ void displayMain() {
             changed |= ImGui::SliderFloat(label, &(cm->m_x.data()[i]), 0., 1.);
             ImGui::TreePop();
         }
+    }
+
+    ImGui::InputText("##Filename", colourmap_filename, 60); ImGui::SameLine();
+    if (ImGui::Button("Save")) {
+        char fn2[80];
+        sprintf(fn2, "colourmaps/%s", colourmap_filename);
+        cm->save(fn2);
     }
 
     ImGui::End();
@@ -314,6 +322,14 @@ void writeData() {
 }
 
 void keyPressedMain(unsigned char key, int x, int y) {
+    fprintf(stderr, "Key %d                   \n\n\n", key);
+    ImGuiIO& io = ImGui::GetIO();
+    ImGui_ImplGLUT_KeyboardFunc(key, x, y);
+    if (io.WantCaptureKeyboard) {
+        return;
+    }
+    
+
     switch (key) {
         case 'a':
             selectRegion();
@@ -395,6 +411,13 @@ void keyPressedMain(unsigned char key, int x, int y) {
 }
 
 void specialKeyPressedMain(int key, int x, int y) {
+    fprintf(stderr, "Special %d                 \n\n\n", key);
+    ImGuiIO& io = ImGui::GetIO();
+    ImGui_ImplGLUT_SpecialFunc(key, x, y);
+    if (io.WantCaptureKeyboard) {
+        return;
+    }
+
     viewStackMain.push(ViewSettings(viewMain));
 
     switch (key) {
@@ -477,29 +500,38 @@ void createMainWindow(char *name, uint32_t width, uint32_t height) {
     for (int i = 0; i < 3 * width * height; i++) {
         pixelsMain[i] = 0;
     }
-    
-    glutDisplayFunc(&displayMain);
 
     // Setup Dear ImGui context
+    fprintf(stderr, "IMGUI_CHECKVERSION\n");
     IMGUI_CHECKVERSION();
+    fprintf(stderr, "CreateContext\n");
     ImGui::CreateContext();
+    fprintf(stderr, "GetIO\n");
     ImGuiIO &io = ImGui::GetIO(); (void)io;
     io.IniFilename = NULL;
 
     // Setup Dear ImGui style
+    fprintf(stderr, "StyleColorsDark\n");
     ImGui::StyleColorsDark();
+    fprintf(stderr, "ImGui_ImplGLUT_Init\n");
     ImGui_ImplGLUT_Init();
+    fprintf(stderr, "ImGui_ImplOpenGL2_Init\n");
     ImGui_ImplOpenGL2_Init();
 
+    fprintf(stderr, "io funcs\n");
     glutPassiveMotionFunc(ImGui_ImplGLUT_MotionFunc);
     glutKeyboardUpFunc(ImGui_ImplGLUT_KeyboardUpFunc);
     glutSpecialUpFunc(ImGui_ImplGLUT_SpecialUpFunc);
     
+    fprintf(stderr, "io funcs 2\n");
     glutKeyboardFunc(&keyPressedMain);
     glutSpecialFunc(&specialKeyPressedMain);
     glutMouseFunc(&mousePressedMain);
     glutMotionFunc(&mouseMovedMain);
     glutReshapeFunc(&onReshapeMain);
+    
+    fprintf(stderr, "glutDisplayFunc\n");
+    glutDisplayFunc(&displayMain);
 }
 
 void destroyMainWindow() {

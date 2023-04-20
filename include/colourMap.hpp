@@ -26,6 +26,7 @@ public:
     std::vector<float> m_x;
     std::vector< std::vector<float> > m_y;
     void generate();
+    void save(char *fn);
 private:
     size_t m_size;
     size_t m_color_count;
