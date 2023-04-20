@@ -109,6 +109,7 @@ void prepareOpenCl() {
 
     setKernelArgs();
 
+    fprintf(stderr, "Start initparticles\n");
     opencl->step("initParticles");
     fprintf(stderr, "End initparticles\n");
 }

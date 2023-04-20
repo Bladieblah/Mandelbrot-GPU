@@ -201,6 +201,7 @@ void displayMain() {
 
     ImGui_ImplOpenGL2_NewFrame();
     ImGui_ImplGLUT_NewFrame();
+    ImGui::NewFrame();
 
     ImGui::SetNextWindowSize(ImVec2(200, 0));
     ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 200, 0));
