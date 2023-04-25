@@ -109,8 +109,8 @@ void drawPath() {
 
     for (int i = 0; i < escape_time; i++) {
         glVertex2f(
-            2 * zArray[i].toPixel(defaultView).toScreen(settingsMain).x / (float)viewMain.sizeX - 1,
-            2 * zArray[i].toPixel(defaultView).toScreen(settingsMain).y / (float)viewMain.sizeY - 1
+            2 * zArray[i].toPixel(defaultView).x / (float)viewMain.sizeX - 1,
+            2 * zArray[i].toPixel(defaultView).y / (float)viewMain.sizeY - 1
         );
     }
 
@@ -118,14 +118,14 @@ void drawPath() {
         for (int i = 0; i < escape_time; i++) {
             glColor3f(1, 0, 0);
             glVertex2f(
-                2 * (zArray[i] + 0.1 * dzxArray[i]).toPixel(defaultView).toScreen(settingsMain).x / (float)viewMain.sizeX - 1,
-                2 * (zArray[i] + 0.1 * dzxArray[i]).toPixel(defaultView).toScreen(settingsMain).y / (float)viewMain.sizeY - 1
+                2 * (zArray[i] + 0.1 * dzxArray[i]).toPixel(defaultView).x / (float)viewMain.sizeX - 1,
+                2 * (zArray[i] + 0.1 * dzxArray[i]).toPixel(defaultView).y / (float)viewMain.sizeY - 1
             );
 
             glColor3f(0, 1, 1);
             glVertex2f(
-                2 * (zArray[i] + 0.1 * dzyArray[i]).toPixel(defaultView).toScreen(settingsMain).x / (float)viewMain.sizeX - 1,
-                2 * (zArray[i] + 0.1 * dzyArray[i]).toPixel(defaultView).toScreen(settingsMain).y / (float)viewMain.sizeY - 1
+                2 * (zArray[i] + 0.1 * dzyArray[i]).toPixel(defaultView).x / (float)viewMain.sizeX - 1,
+                2 * (zArray[i] + 0.1 * dzyArray[i]).toPixel(defaultView).y / (float)viewMain.sizeY - 1
             );
         }
     }
