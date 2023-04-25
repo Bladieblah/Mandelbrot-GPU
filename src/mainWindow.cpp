@@ -20,12 +20,17 @@
 int windowIdMain;
 uint32_t *pixelsMain;
 
+size_t test_steps = 20000;
+WorldCoordinate *zArray, *dzxArray, *dzyArray;
+size_t escape_time = 0;
+
 WindowSettings settingsMain;
 MouseState mouseMain;
 ViewSettings viewMain, defaultView;
 std::stack<ViewSettings> viewStackMain;
 bool selecting = true;
 bool drawGradient = true;
+bool drawDerivatives = true;
 unsigned int count0 = 0;
 char colourmap_filename[60];
 
@@ -66,60 +71,81 @@ void drawBox() {
     glEnd();
 }
 
-void drawPath() {
+void fillTestArray() {
+    int i;
     ScreenCoordinate screen({mouseMain.x, mouseMain.y});
     WorldCoordinate fractal = screen.toPixel(settingsMain).toWorld(viewMain);
     WorldCoordinate dzx({1, 0});
     WorldCoordinate dzy({0, 1});
     WorldCoordinate offset(fractal);
+
+    zArray[0] = offset;
+    dzxArray[0] = dzx;
+    dzyArray[0] = dzy;
+
+    for (i = 1; i < test_steps; i++) {
+        dzx = 2 * complex_mul(fractal, dzx) + WorldCoordinate({1, 0});
+        dzy = 2 * complex_mul(fractal, dzy) + WorldCoordinate({0, 1});
+        fractal = complex_square(fractal) + offset;
+
+        zArray[i] = offset;
+        dzxArray[i] = dzx;
+        dzyArray[i] = dzy;
+
+        if ((fractal.x * fractal.x + fractal.y * fractal.y) > 16) {
+            break;
+        }   
+    }
     
+    escape_time = i + 1;
+}
+
+void drawPath() {
     glPointSize(2);
     glEnable(GL_POINT_SMOOTH);
     
     glBegin(GL_POINTS);
     glColor3f(1, 0, 1);
 
-    glVertex2f(
-        2 * fractal.toPixel(defaultView).x / (float)viewMain.sizeX - 1,
-        2 * fractal.toPixel(defaultView).y / (float)viewMain.sizeY - 1
-    );
-
-    for (int i = 0; i < 20000; i++) {
-        dzx = 2 * complex_mul(fractal, dzx) + WorldCoordinate({1, 0});
-        dzy = 2 * complex_mul(fractal, dzy) + WorldCoordinate({0, 1});
-        fractal = complex_square(fractal) + offset;
-
-        glColor3f(1, 0, 1);
+    for (int i = 0; i < escape_time; i++) {
         glVertex2f(
-            2 * fractal.toPixel(defaultView).toScreen(settingsMain).x / (float)viewMain.sizeX - 1,
-            2 * fractal.toPixel(defaultView).toScreen(settingsMain).y / (float)viewMain.sizeY - 1
+            2 * zArray[i].toPixel(defaultView).toScreen(settingsMain).x / (float)viewMain.sizeX - 1,
+            2 * zArray[i].toPixel(defaultView).toScreen(settingsMain).y / (float)viewMain.sizeY - 1
         );
+    }
 
-        glColor3f(1, 0, 0);
-        glVertex2f(
-            2 * (fractal + 0.1 * dzx).toPixel(defaultView).toScreen(settingsMain).x / (float)viewMain.sizeX - 1,
-            2 * (fractal + 0.1 * dzx).toPixel(defaultView).toScreen(settingsMain).y / (float)viewMain.sizeY - 1
-        );
+    if (drawDerivatives) {
+        for (int i = 0; i < escape_time; i++) {
+            glColor3f(1, 0, 0);
+            glVertex2f(
+                2 * (zArray[i] + 0.1 * dzxArray[i]).toPixel(defaultView).toScreen(settingsMain).x / (float)viewMain.sizeX - 1,
+                2 * (zArray[i] + 0.1 * dzxArray[i]).toPixel(defaultView).toScreen(settingsMain).y / (float)viewMain.sizeY - 1
+            );
 
-        glColor3f(0, 1, 1);
-        glVertex2f(
-            2 * (fractal + 0.1 * dzy).toPixel(defaultView).toScreen(settingsMain).x / (float)viewMain.sizeX - 1,
-            2 * (fractal + 0.1 * dzy).toPixel(defaultView).toScreen(settingsMain).y / (float)viewMain.sizeY - 1
-        );
-
-        if ((fractal.x * fractal.x + fractal.y * fractal.y) > 16) {
-            break;
-        }   
+            glColor3f(0, 1, 1);
+            glVertex2f(
+                2 * (zArray[i] + 0.1 * dzyArray[i]).toPixel(defaultView).toScreen(settingsMain).x / (float)viewMain.sizeX - 1,
+                2 * (zArray[i] + 0.1 * dzyArray[i]).toPixel(defaultView).toScreen(settingsMain).y / (float)viewMain.sizeY - 1
+            );
+        }
     }
 
     glEnd();
 }
 
 void showInfo() {
+    ImGui::SeparatorText("Info");
     ImGui::Text("x = %.16f", viewMain.centerX);
     ImGui::Text("y = %.16f", viewMain.centerY);
     ImGui::Text("scale = %.3g", viewMain.scaleY); ImGui::SameLine();
-    ImGui::Text("theta = %.3f", viewMain.theta); 
+    ImGui::Text("theta = %.3f", viewMain.theta);
+
+    ScreenCoordinate screen({mouseMain.x, mouseMain.y});
+    WorldCoordinate fractal = screen.toPixel(settingsMain).toWorld(viewMain);
+
+    ImGui::SeparatorText("Cursor");
+    ImGui::Text("x = %.16f", fractal.x);
+    ImGui::Text("y = %.16f", fractal.y);
 }
 
 void showColourmapControls() {
@@ -244,9 +270,9 @@ void displayMain() {
     ImGui::Begin("Gradient colors");
     ImGui::PushItemWidth(140);
 
-    if (ImGui::CollapsingHeader("Info")) {
-        showInfo();
-    }
+    // if (ImGui::CollapsingHeader("Info")) {
+    showInfo();
+    // }
 
     if (ImGui::CollapsingHeader("Colour Map")) {
         showColourmapControls();
@@ -487,10 +513,15 @@ void mousePressedMain(int button, int state, int x, int y) {
 }
 
 void mouseMovedMain(int x, int y) {
+    ImGuiIO& io = ImGui::GetIO();
     ImGui_ImplGLUT_MotionFunc(x, y);
 
     mouseMain.x = x;
     mouseMain.y = y;
+
+    if (!io.WantCaptureMouse) {
+        fillTestArray();
+    }
 }
 
 void onReshapeMain(int w, int h) {
@@ -514,6 +545,10 @@ void createMainWindow(char *name, uint32_t width, uint32_t height) {
     windowIdMain = glutCreateWindow(name);
 
     pixelsMain = (uint32_t *)malloc(3 * width * height * sizeof(uint32_t));
+    
+    zArray = (WorldCoordinate *)malloc(test_steps * sizeof(WorldCoordinate));
+    dzxArray = (WorldCoordinate *)malloc(test_steps * sizeof(WorldCoordinate));
+    dzyArray = (WorldCoordinate *)malloc(test_steps * sizeof(WorldCoordinate));
 
     for (int i = 0; i < 3 * width * height; i++) {
         pixelsMain[i] = 0;
@@ -537,7 +572,6 @@ void createMainWindow(char *name, uint32_t width, uint32_t height) {
     ImGui_ImplOpenGL2_Init();
 
     fprintf(stderr, "io funcs\n");
-    glutPassiveMotionFunc(ImGui_ImplGLUT_MotionFunc);
     glutKeyboardUpFunc(ImGui_ImplGLUT_KeyboardUpFunc);
     glutSpecialUpFunc(ImGui_ImplGLUT_SpecialUpFunc);
     
@@ -546,6 +580,7 @@ void createMainWindow(char *name, uint32_t width, uint32_t height) {
     glutSpecialFunc(&specialKeyPressedMain);
     glutMouseFunc(&mousePressedMain);
     glutMotionFunc(&mouseMovedMain);
+    glutPassiveMotionFunc(&mouseMovedMain);
     glutReshapeFunc(&onReshapeMain);
     
     fprintf(stderr, "glutDisplayFunc\n");
@@ -554,6 +589,10 @@ void createMainWindow(char *name, uint32_t width, uint32_t height) {
 
 void destroyMainWindow() {
     free(pixelsMain);
+    
+    free(zArray);
+    free(dzxArray);
+    free(dzyArray);
 }
 
 #ifdef MANDEL_GPU_USE_DOUBLE
