@@ -26,6 +26,8 @@ ColourMap *ColourMapFromInt(FILE *f, size_t size, bool symmetric) {
         colours.push_back(ColourInt(tmp));
     }
 
+    fclose(f);
+
     return new ColourMap(colours, size, symmetric);
 }
 
@@ -36,6 +38,8 @@ ColourMap *ColourMapFromFloat(FILE *f, size_t size, bool symmetric) {
     while (fscanf(f, "%f, {%f, %f, %f}\n", &(tmp.x), &(tmp.rgb[0]), &(tmp.rgb[1]), &(tmp.rgb[2])) == 4) {
         colours.push_back(ColourFloat(tmp));
     }
+
+    fclose(f);
 
     return new ColourMap(colours, size, symmetric);
 }
@@ -54,6 +58,7 @@ ColourMap *ColourMapFromFile(char *fn, size_t size) {
 
     if (fscanf(f, "kind = %c\n", &kind) == EOF || fscanf(f, "symmetric = %d\n", &symmetric) == EOF) {
         fprintf(stderr, "Error loading cm.\n");
+        fclose(f);
         return new ColourMap(defaultColours, size, false);
     }
 
@@ -66,7 +71,7 @@ ColourMap *ColourMapFromFile(char *fn, size_t size) {
             break;
     }
 
-    fprintf(stderr, "Error loading cm.\n");
+    fclose(f);
     return new ColourMap(defaultColours, size, true);
 }
 
@@ -96,7 +101,7 @@ ColourMap::ColourMap(vector<ColourInt> colours, size_t size, bool symmetric) {
     m_color_count = colours.size();
     m_symmetric = symmetric;
 
-    map.reserve(m_size);
+    map.resize(m_size);
 
     for (ColourInt colour : colours) {
         vector<float> tmp;
@@ -112,7 +117,6 @@ ColourMap::ColourMap(vector<ColourInt> colours, size_t size, bool symmetric) {
 }
 
 void ColourMap::generate() {
-    // fprintf(stderr, "%.2f, %.2f, %.2f\n", m_y[0][0], m_y[0][1], m_y[0][2]);
     Interp1d interp(m_x, m_y);
     
     float p = 0;

@@ -108,18 +108,19 @@ void prepareOpenCl() {
     }
     fprintf(stderr, "ColourMapFromFile\n");
     cm = ColourMapFromFile(filename, config->num_colours);
+    fprintf(stderr, "cmap\n");
     cmap = (unsigned int *)malloc(3 * config->num_colours * sizeof(unsigned int));
-    fprintf(stderr, "apply\n");
+    // fprintf(stderr, "apply\n");
     cm->apply(cmap);
-    fprintf(stderr, "writeBuffer\n");
+    // fprintf(stderr, "writeBuffer\n");
     opencl->writeBuffer("colourMap", cmap);
 
-    fprintf(stderr, "setKernelArgs\n");
+    // fprintf(stderr, "setKernelArgs\n");
     setKernelArgs();
 
-    fprintf(stderr, "Start initparticles\n");
+    // fprintf(stderr, "Start initparticles\n");
     opencl->step("initParticles");
-    fprintf(stderr, "End initparticles\n");
+    // fprintf(stderr, "End initparticles\n");
 }
 
 void prepare() {
@@ -190,21 +191,21 @@ int main(int argc, char **argv) {
 
     prepare();
 
-    fprintf(stderr, "atexit\n");
+    // fprintf(stderr, "atexit\n");
     atexit(&cleanAll);
 
-    fprintf(stderr, "glutInit\n");
+    // fprintf(stderr, "glutInit\n");
     glutInit(&argc, argv);
-    fprintf(stderr, "createMainWindow\n");
+    // fprintf(stderr, "createMainWindow\n");
     createMainWindow("Main", config->width, config->height);
     // createGradientWindow();
-    fprintf(stderr, "glutDisplayFunc\n");
+    // fprintf(stderr, "glutDisplayFunc\n");
     glutDisplayFunc(&display);
 
-    fprintf(stderr, "glutIdleFunc\n");
+    // fprintf(stderr, "glutIdleFunc\n");
     glutIdleFunc(&display);
 
-    fprintf(stderr, "\nStarting main loop\n\n");
+    // fprintf(stderr, "\nStarting main loop\n\n");
     glutMainLoop();
 
     return 0;

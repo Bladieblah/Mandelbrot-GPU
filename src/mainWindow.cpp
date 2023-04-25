@@ -23,6 +23,8 @@ uint32_t *pixelsMain;
 size_t test_steps = 20000;
 WorldCoordinate *zArray, *dzxArray, *dzyArray;
 size_t escape_time = 0;
+size_t escape_dx = 0;
+size_t escape_dy = 0;
 
 WindowSettings settingsMain;
 MouseState mouseMain;
@@ -79,22 +81,32 @@ void fillTestArray() {
     WorldCoordinate dzy({0, 1});
     WorldCoordinate offset(fractal);
 
-    zArray[0] = offset;
+    zArray[0] = fractal;
     dzxArray[0] = dzx;
     dzyArray[0] = dzy;
+
+    escape_dx = 0;
+    escape_dy = 0;
 
     for (i = 1; i < test_steps; i++) {
         dzx = 2 * complex_mul(fractal, dzx) + WorldCoordinate({1, 0});
         dzy = 2 * complex_mul(fractal, dzy) + WorldCoordinate({0, 1});
         fractal = complex_square(fractal) + offset;
 
-        zArray[i] = offset;
+        zArray[i] = fractal;
         dzxArray[i] = dzx;
         dzyArray[i] = dzy;
 
+        if ((dzx.x * dzx.x + dzx.y * dzx.y) > 10 && escape_dx == 0) {
+            escape_dx = i;
+        }
+        if ((dzy.x * dzy.x + dzy.y * dzy.y) > 10 && escape_dy == 0) {
+            escape_dy = i;
+        }
+
         if ((fractal.x * fractal.x + fractal.y * fractal.y) > 16) {
             break;
-        }   
+        }
     }
     
     escape_time = i + 1;
@@ -146,6 +158,14 @@ void showInfo() {
     ImGui::SeparatorText("Cursor");
     ImGui::Text("x = %.16f", fractal.x);
     ImGui::Text("y = %.16f", fractal.y);
+    
+    ImGui::Text("Escape Time = %zu", escape_time);
+    ImGui::Text("dx = %zu", escape_dx); ImGui::SameLine();
+    ImGui::Text("dy = %zu", escape_dy);
+
+
+    ImGui::Checkbox("Draw Box", &selecting);
+    ImGui::Checkbox("Draw Derivatives", &drawDerivatives);
 }
 
 void showColourmapControls() {
@@ -182,7 +202,7 @@ void displayMain() {
 
     ImGuiIO& io = ImGui::GetIO();
 
-    glClearColor( 0, 0, 0, 1 );
+    glClearColor(0, 0, 0, 1);
     glColor3f(1, 1, 1);
     glClear( GL_COLOR_BUFFER_BIT );
 
@@ -233,6 +253,7 @@ void displayMain() {
     // --------------------------- GRADIENT ---------------------------
 
     if (drawGradient) {
+        glColor3f(1, 1, 1);
         glEnable (GL_TEXTURE_2D);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
@@ -393,9 +414,14 @@ void keyPressedMain(unsigned char key, int x, int y) {
         case 'h':
             drawGradient = ! drawGradient;
             break;
+
         case 'b':
             selecting = ! selecting;
             break;
+        case 'n':
+            drawDerivatives = ! drawDerivatives;
+            break;
+
         case 'r':
             settingsMain.zoom = 1.;
             settingsMain.centerX = 0.;
@@ -433,12 +459,12 @@ void keyPressedMain(unsigned char key, int x, int y) {
         
         case ',':
             if (count0 > 0) {
-                count0 -= 10;
+                count0 -= 4;
                 opencl->setKernelArg("renderImage", 4, sizeof(unsigned int), &count0);
             }
             break;
         case '.':
-            count0 += 10;
+            count0 += 4;
             opencl->setKernelArg("renderImage", 4, sizeof(unsigned int), &count0);
             break;
 
@@ -555,27 +581,27 @@ void createMainWindow(char *name, uint32_t width, uint32_t height) {
     }
 
     // Setup Dear ImGui context
-    fprintf(stderr, "IMGUI_CHECKVERSION\n");
+    // fprintf(stderr, "IMGUI_CHECKVERSION\n");
     IMGUI_CHECKVERSION();
-    fprintf(stderr, "CreateContext\n");
+    // fprintf(stderr, "CreateContext\n");
     ImGui::CreateContext();
-    fprintf(stderr, "GetIO\n");
+    // fprintf(stderr, "GetIO\n");
     ImGuiIO &io = ImGui::GetIO(); (void)io;
     io.IniFilename = NULL;
 
     // Setup Dear ImGui style
-    fprintf(stderr, "StyleColorsDark\n");
+    // fprintf(stderr, "StyleColorsDark\n");
     ImGui::StyleColorsDark();
-    fprintf(stderr, "ImGui_ImplGLUT_Init\n");
+    // fprintf(stderr, "ImGui_ImplGLUT_Init\n");
     ImGui_ImplGLUT_Init();
-    fprintf(stderr, "ImGui_ImplOpenGL2_Init\n");
+    // fprintf(stderr, "ImGui_ImplOpenGL2_Init\n");
     ImGui_ImplOpenGL2_Init();
 
-    fprintf(stderr, "io funcs\n");
+    // fprintf(stderr, "io funcs\n");
     glutKeyboardUpFunc(ImGui_ImplGLUT_KeyboardUpFunc);
     glutSpecialUpFunc(ImGui_ImplGLUT_SpecialUpFunc);
     
-    fprintf(stderr, "io funcs 2\n");
+    // fprintf(stderr, "io funcs 2\n");
     glutKeyboardFunc(&keyPressedMain);
     glutSpecialFunc(&specialKeyPressedMain);
     glutMouseFunc(&mousePressedMain);
@@ -583,7 +609,7 @@ void createMainWindow(char *name, uint32_t width, uint32_t height) {
     glutPassiveMotionFunc(&mouseMovedMain);
     glutReshapeFunc(&onReshapeMain);
     
-    fprintf(stderr, "glutDisplayFunc\n");
+    // fprintf(stderr, "glutDisplayFunc\n");
     glutDisplayFunc(&displayMain);
 }
 
