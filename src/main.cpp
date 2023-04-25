@@ -8,6 +8,7 @@
 
 #include "colourMap.hpp"
 #include "config.hpp"
+// #include "gradientWindow.hpp"
 #include "mainWindow.hpp"
 #include "opencl.hpp"
 #include "pcg.hpp"
@@ -19,6 +20,8 @@ using namespace std;
  */
 
 Config *config;
+unsigned int *cmap;
+ColourMap *cm;
 
 chrono::high_resolution_clock::time_point frameTime;
 unsigned int frameCount = 0;
@@ -49,7 +52,7 @@ void createKernelSpecs() {
     };
 }
 
-#ifdef USE_DOUBLE
+#ifdef MANDEL_GPU_USE_DOUBLE
 double to_double(IntPair num) {
     return (num.sign ? 1 : -1) * ((double)num.integ + (((double)num.fract) / (~0ULL)));
 }
@@ -57,7 +60,7 @@ double to_double(IntPair num) {
 
 void setKernelArgs() {
     opencl->setKernelBufferArg("initParticles", 0, "particles");
-#ifdef USE_DOUBLE
+#ifdef MANDEL_GPU_USE_DOUBLE
     transformView();
     opencl->setKernelArg("initParticles", 1, sizeof(ViewSettingsCL), &(viewMainCL));
 #else
@@ -77,11 +80,14 @@ void setKernelArgs() {
 }
 
 void prepareOpenCl() {
+    fprintf(stderr, "createBufferSpecs\n");
     createBufferSpecs();
+    fprintf(stderr, "createKernelSpecs\n");
     createKernelSpecs();
 
+    fprintf(stderr, "OpenCl\n");
     opencl = new OpenCl(
-#ifdef USE_DOUBLE
+#ifdef MANDEL_GPU_USE_DOUBLE
         "shaders/sample_double.cl",
 #else
         "shaders/sample.cl",
@@ -93,25 +99,33 @@ void prepareOpenCl() {
         config->verbose
     );
 
+    fprintf(stderr, "filename\n");
     char filename[120] = "colourmaps/default.cm";
     if (strlen(config->colour_file)) {
         fprintf(stderr, "Writing fn\n");
         sprintf(filename, "colourmaps/%s", config->colour_file);
         fprintf(stderr, "Writing fn done\n");
     }
-    ColourMap cm = ColourMapFromFile(filename, config->num_colours);
-    unsigned int *cmap = (unsigned int *)malloc(3 * config->num_colours * sizeof(unsigned int));
-    cm.apply(cmap);
+    fprintf(stderr, "ColourMapFromFile\n");
+    cm = ColourMapFromFile(filename, config->num_colours);
+    fprintf(stderr, "cmap\n");
+    cmap = (unsigned int *)malloc(3 * config->num_colours * sizeof(unsigned int));
+    fprintf(stderr, "apply\n");
+    cm->apply(cmap);
+    fprintf(stderr, "writeBuffer\n");
     opencl->writeBuffer("colourMap", cmap);
 
+    fprintf(stderr, "setKernelArgs\n");
     setKernelArgs();
 
+    fprintf(stderr, "Start initparticles\n");
     opencl->step("initParticles");
+    fprintf(stderr, "End initparticles\n");
 }
 
 void prepare() {
 
-    #ifdef USE_DOUBLE
+    #ifdef MANDEL_GPU_USE_DOUBLE
     float scaleY = config->scale;
     viewMain = {
         scaleY / (double)config->height * (double)config->width, scaleY,
@@ -145,6 +159,7 @@ void display() {
 
     opencl->startFrame();
     
+    // displayGradient();
     displayMain();
 
     opencl->step("mandelStep");
@@ -176,12 +191,18 @@ int main(int argc, char **argv) {
 
     prepare();
 
+    fprintf(stderr, "atexit\n");
     atexit(&cleanAll);
 
+    fprintf(stderr, "glutInit\n");
     glutInit(&argc, argv);
+    fprintf(stderr, "createMainWindow\n");
     createMainWindow("Main", config->width, config->height);
+    // createGradientWindow();
+    fprintf(stderr, "glutDisplayFunc\n");
     glutDisplayFunc(&display);
 
+    fprintf(stderr, "glutIdleFunc\n");
     glutIdleFunc(&display);
 
     fprintf(stderr, "\nStarting main loop\n\n");

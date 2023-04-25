@@ -97,5 +97,6 @@ public:
     unsigned printCount = 0;
 };
 
+extern OpenCl *opencl;
 
 #endif

@@ -4,7 +4,7 @@
 #include "config.hpp"
 #include "opencl.hpp"
 
-#ifdef USE_DOUBLE
+#ifdef MANDEL_GPU_USE_DOUBLE
 typedef struct IntPair {
     unsigned int sign;
     unsigned long integ;
@@ -63,7 +63,7 @@ typedef struct WindowSettings {
 typedef struct MouseState {
     int xDown, yDown;
     int x, y;
-    int state;
+    int state = 1; // GLUT_UP
 } MouseState;
 
 void displayMain();
@@ -75,7 +75,5 @@ void transformView();
 extern ViewSettings viewMain, defaultView;
 extern WindowSettings settingsMain;
 extern uint32_t *pixelsMain;
-extern OpenCl *opencl;
-extern Config *config;
 
 #endif

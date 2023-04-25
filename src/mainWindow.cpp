@@ -7,6 +7,12 @@
 #include <OpenGL/glu.h>
 #include <GLUT/glut.h>
 
+#include "../imgui/imgui.h"
+#include "../imgui/backends/imgui_impl_glut.h"
+#include "../imgui/backends/imgui_impl_opengl2.h"
+
+#include "colourMap.hpp"
+#include "config.hpp"
 #include "coordinates.hpp"
 #include "mainWindow.hpp"
 #include "opencl.hpp"
@@ -14,14 +20,23 @@
 int windowIdMain;
 uint32_t *pixelsMain;
 
+size_t test_steps = 20000;
+WorldCoordinate *zArray, *dzxArray, *dzyArray;
+size_t escape_time = 0;
+size_t escape_dx = 0;
+size_t escape_dy = 0;
+
 WindowSettings settingsMain;
 MouseState mouseMain;
 ViewSettings viewMain, defaultView;
 std::stack<ViewSettings> viewStackMain;
 bool selecting = true;
+bool drawGradient = true;
+bool drawDerivatives = true;
 unsigned int count0 = 0;
+char colourmap_filename[60];
 
-#ifdef USE_DOUBLE
+#ifdef MANDEL_GPU_USE_DOUBLE
 ViewSettingsCL viewMainCL;
 #endif
 
@@ -58,64 +73,143 @@ void drawBox() {
     glEnd();
 }
 
-void drawPath() {
+void fillTestArray() {
+    int i;
     ScreenCoordinate screen({mouseMain.x, mouseMain.y});
     WorldCoordinate fractal = screen.toPixel(settingsMain).toWorld(viewMain);
     WorldCoordinate dzx({1, 0});
     WorldCoordinate dzy({0, 1});
     WorldCoordinate offset(fractal);
+
+    zArray[0] = fractal;
+    dzxArray[0] = dzx;
+    dzyArray[0] = dzy;
+
+    escape_dx = 0;
+    escape_dy = 0;
+
+    for (i = 1; i < test_steps; i++) {
+        dzx = 2 * complex_mul(fractal, dzx) + WorldCoordinate({1, 0});
+        dzy = 2 * complex_mul(fractal, dzy) + WorldCoordinate({0, 1});
+        fractal = complex_square(fractal) + offset;
+
+        zArray[i] = fractal;
+        dzxArray[i] = dzx;
+        dzyArray[i] = dzy;
+
+        if ((dzx.x * dzx.x + dzx.y * dzx.y) > 10 && escape_dx == 0) {
+            escape_dx = i;
+        }
+        if ((dzy.x * dzy.x + dzy.y * dzy.y) > 10 && escape_dy == 0) {
+            escape_dy = i;
+        }
+
+        if ((fractal.x * fractal.x + fractal.y * fractal.y) > 16) {
+            break;
+        }
+    }
     
+    escape_time = i + 1;
+}
+
+void drawPath() {
     glPointSize(2);
     glEnable(GL_POINT_SMOOTH);
     
     glBegin(GL_POINTS);
     glColor3f(1, 0, 1);
 
-    glVertex2f(
-        2 * fractal.toPixel(defaultView).x / (float)viewMain.sizeX - 1,
-        2 * fractal.toPixel(defaultView).y / (float)viewMain.sizeY - 1
-    );
-
-    for (int i = 0; i < 20000; i++) {
-        dzx = 2 * complex_mul(fractal, dzx) + WorldCoordinate({1, 0});
-        dzy = 2 * complex_mul(fractal, dzy) + WorldCoordinate({0, 1});
-        fractal = complex_square(fractal) + offset;
-
-        glColor3f(1, 0, 1);
+    for (int i = 0; i < escape_time; i++) {
         glVertex2f(
-            2 * fractal.toPixel(defaultView).toScreen(settingsMain).x / (float)viewMain.sizeX - 1,
-            2 * fractal.toPixel(defaultView).toScreen(settingsMain).y / (float)viewMain.sizeY - 1
+            2 * zArray[i].toPixel(defaultView).x / (float)viewMain.sizeX - 1,
+            2 * zArray[i].toPixel(defaultView).y / (float)viewMain.sizeY - 1
         );
+    }
 
-        glColor3f(1, 0, 0);
-        glVertex2f(
-            2 * (fractal + 0.1 * dzx).toPixel(defaultView).toScreen(settingsMain).x / (float)viewMain.sizeX - 1,
-            2 * (fractal + 0.1 * dzx).toPixel(defaultView).toScreen(settingsMain).y / (float)viewMain.sizeY - 1
-        );
+    if (drawDerivatives) {
+        for (int i = 0; i < escape_time; i++) {
+            glColor3f(1, 0, 0);
+            glVertex2f(
+                2 * (zArray[i] + 0.1 * dzxArray[i]).toPixel(defaultView).x / (float)viewMain.sizeX - 1,
+                2 * (zArray[i] + 0.1 * dzxArray[i]).toPixel(defaultView).y / (float)viewMain.sizeY - 1
+            );
 
-        glColor3f(0, 1, 1);
-        glVertex2f(
-            2 * (fractal + 0.1 * dzy).toPixel(defaultView).toScreen(settingsMain).x / (float)viewMain.sizeX - 1,
-            2 * (fractal + 0.1 * dzy).toPixel(defaultView).toScreen(settingsMain).y / (float)viewMain.sizeY - 1
-        );
-
-        if ((fractal.x * fractal.x + fractal.y * fractal.y) > 16) {
-            break;
-        }   
+            glColor3f(0, 1, 1);
+            glVertex2f(
+                2 * (zArray[i] + 0.1 * dzyArray[i]).toPixel(defaultView).x / (float)viewMain.sizeX - 1,
+                2 * (zArray[i] + 0.1 * dzyArray[i]).toPixel(defaultView).y / (float)viewMain.sizeY - 1
+            );
+        }
     }
 
     glEnd();
 }
 
+void showInfo() {
+    ImGui::SeparatorText("Info");
+    ImGui::Text("x = %.16f", viewMain.centerX);
+    ImGui::Text("y = %.16f", viewMain.centerY);
+    ImGui::Text("scale = %.3g", viewMain.scaleY); ImGui::SameLine();
+    ImGui::Text("theta = %.3f", viewMain.theta);
+
+    ScreenCoordinate screen({mouseMain.x, mouseMain.y});
+    WorldCoordinate fractal = screen.toPixel(settingsMain).toWorld(viewMain);
+
+    ImGui::SeparatorText("Cursor");
+    ImGui::Text("x = %.16f", fractal.x);
+    ImGui::Text("y = %.16f", fractal.y);
+    
+    ImGui::Text("Escape Time = %zu", escape_time);
+    ImGui::Text("dx = %zu", escape_dx); ImGui::SameLine();
+    ImGui::Text("dy = %zu", escape_dy);
+
+
+    ImGui::Checkbox("Draw Box", &selecting);
+    ImGui::Checkbox("Draw Derivatives", &drawDerivatives);
+}
+
+void showColourmapControls() {
+    bool changed = false;
+    char label[100];
+    for (size_t i = 0; i < cm->getColorCount(); i++) {
+        sprintf(label, "Color %zu", i);
+        if (ImGui::TreeNode(label)) {
+            sprintf(label, "##picker %zu", i);
+            changed |= ImGui::ColorPicker3(label, cm->m_y[i].data(), ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_DisplayHSV | ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_NoLabel);
+            sprintf(label, "##slider %zu", i);
+            changed |= ImGui::SliderFloat(label, &(cm->m_x.data()[i]), 0., 1.);
+            ImGui::TreePop();
+        }
+    }
+
+    ImGui::InputText("##Filename", colourmap_filename, 60); ImGui::SameLine();
+    if (ImGui::Button("Save")) {
+        char fn2[80];
+        sprintf(fn2, "colourmaps/%s", colourmap_filename);
+        cm->save(fn2);
+    }
+
+    if (changed) {
+        cm->generate();
+        cm->apply(cmap);
+        opencl->writeBuffer("colourMap", cmap);
+    }
+}
+
 void displayMain() {
+    // --------------------------- RESET ---------------------------
     glutSetWindow(windowIdMain);
 
-    glClearColor( 0, 0, 0, 1 );
+    ImGuiIO& io = ImGui::GetIO();
+
+    glClearColor(0, 0, 0, 1);
     glColor3f(1, 1, 1);
     glClear( GL_COLOR_BUFFER_BIT );
 
     glEnable (GL_TEXTURE_2D);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    
+    // --------------------------- FRACTAL ---------------------------
 
     glTexImage2D (
         GL_TEXTURE_2D,
@@ -142,7 +236,7 @@ void displayMain() {
 
     glDisable (GL_TEXTURE_2D);
 
-    if (mouseMain.state == GLUT_DOWN && !selecting) {
+    if (!io.WantCaptureMouse && mouseMain.state == GLUT_DOWN && !selecting) {
         drawPath();
     }
 
@@ -152,10 +246,64 @@ void displayMain() {
         drawGrid();
     }
 
-    if (mouseMain.state == GLUT_DOWN && selecting) {
+    if (!io.WantCaptureMouse && mouseMain.state == GLUT_DOWN && selecting) {
         drawBox();
     }
+    
+    // --------------------------- GRADIENT ---------------------------
 
+    if (drawGradient) {
+        glColor3f(1, 1, 1);
+        glEnable (GL_TEXTURE_2D);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+        glTexImage2D (
+            GL_TEXTURE_2D,
+            0,
+            GL_RGB,
+            config->num_colours,
+            1,
+            0,
+            GL_RGB,
+            GL_UNSIGNED_INT,
+            &(cmap[0])
+        );
+
+        glBegin(GL_QUADS);
+            glTexCoord2f(0.0f, 0.0f); glVertex2f(-1.0, -1.0);
+            glTexCoord2f(1.0f, 0.0f); glVertex2f(-1.0,  1.0);
+            glTexCoord2f(1.0f, 1.0f); glVertex2f(-0.9,  1.0);
+            glTexCoord2f(0.0f, 1.0f); glVertex2f(-0.9, -1.0);
+        glEnd();
+
+        glDisable (GL_TEXTURE_2D);
+    }
+
+    // --------------------------- IMGUI ---------------------------
+
+    ImGui_ImplOpenGL2_NewFrame();
+    ImGui_ImplGLUT_NewFrame();
+    ImGui::NewFrame();
+
+    ImGui::SetNextWindowSize(ImVec2(220, 0));
+    ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 200, 0));
+
+    ImGui::Begin("Gradient colors");
+    ImGui::PushItemWidth(140);
+
+    showInfo();
+
+    if (ImGui::CollapsingHeader("Colour Map")) {
+        showColourmapControls();
+    }
+
+    
+
+    ImGui::End();
+
+    // --------------------------- DRAW ---------------------------
+    ImGui::Render();
+    ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
     glFlush();
     glutSwapBuffers();
 }
@@ -170,7 +318,7 @@ void updateView() {
     viewMain.cosTheta = cos(viewMain.theta);
     viewMain.sinTheta = sin(viewMain.theta);
     
-#ifdef USE_DOUBLE
+#ifdef MANDEL_GPU_USE_DOUBLE
     transformView();
     opencl->setKernelArg("initParticles", 1, sizeof(ViewSettingsCL), &(viewMainCL));
 #else
@@ -180,7 +328,8 @@ void updateView() {
 }
 
 void selectRegion() {
-    if (mouseMain.state != GLUT_DOWN) {
+    ImGuiIO& io = ImGui::GetIO();
+    if (io.WantCaptureMouse || mouseMain.state != GLUT_DOWN) {
         return;
     }
 
@@ -205,8 +354,13 @@ void writeData() {
     FILE *outFile;
     char filename[200];
 
+#ifdef MANDEL_GPU_USE_DOUBLE
     sprintf(filename, "raw_images/weighted_%lu_%lu_%.6f_%.6f_%.6f_%.6f_%d.csv", 
         viewMain.sizeX, viewMain.sizeY, viewMain.scaleY, viewMain.theta, viewMain.centerX, viewMain.centerY, count0);
+#else
+    sprintf(filename, "raw_images/weighted_%d_%d_%.6f_%.6f_%.6f_%.6f_%d.csv", 
+        viewMain.sizeX, viewMain.sizeY, viewMain.scaleY, viewMain.theta, viewMain.centerX, viewMain.centerY, count0);
+#endif
     
     outFile = fopen(filename, "w");
 
@@ -231,6 +385,13 @@ void writeData() {
 }
 
 void keyPressedMain(unsigned char key, int x, int y) {
+    ImGuiIO& io = ImGui::GetIO();
+    ImGui_ImplGLUT_KeyboardFunc(key, x, y);
+    if (io.WantCaptureKeyboard) {
+        return;
+    }
+    
+
     switch (key) {
         case 'a':
             selectRegion();
@@ -247,9 +408,17 @@ void keyPressedMain(unsigned char key, int x, int y) {
         case 'g':
             settingsMain.grid = ! settingsMain.grid;
             break;
+        case 'h':
+            drawGradient = ! drawGradient;
+            break;
+
         case 'b':
             selecting = ! selecting;
             break;
+        case 'n':
+            drawDerivatives = ! drawDerivatives;
+            break;
+
         case 'r':
             settingsMain.zoom = 1.;
             settingsMain.centerX = 0.;
@@ -259,7 +428,7 @@ void keyPressedMain(unsigned char key, int x, int y) {
             if (!viewStackMain.empty()) {
                 viewMain = viewStackMain.top();
                 viewStackMain.pop();
-#ifdef USE_DOUBLE
+#ifdef MANDEL_GPU_USE_DOUBLE
                 transformView();
                 opencl->setKernelArg("initParticles", 1, sizeof(ViewSettingsCL), &(viewMainCL));
 #else
@@ -287,12 +456,12 @@ void keyPressedMain(unsigned char key, int x, int y) {
         
         case ',':
             if (count0 > 0) {
-                count0 -= 10;
+                count0 -= 4;
                 opencl->setKernelArg("renderImage", 4, sizeof(unsigned int), &count0);
             }
             break;
         case '.':
-            count0 += 10;
+            count0 += 4;
             opencl->setKernelArg("renderImage", 4, sizeof(unsigned int), &count0);
             break;
 
@@ -309,24 +478,30 @@ void keyPressedMain(unsigned char key, int x, int y) {
 }
 
 void specialKeyPressedMain(int key, int x, int y) {
+    ImGuiIO& io = ImGui::GetIO();
+    ImGui_ImplGLUT_SpecialFunc(key, x, y);
+    if (io.WantCaptureKeyboard) {
+        return;
+    }
+
     viewStackMain.push(ViewSettings(viewMain));
 
     switch (key) {
         case GLUT_KEY_RIGHT:
-            viewMain.centerX += 0.1 * viewMain.scaleY * viewMain.cosTheta;
-            viewMain.centerY -= 0.1 * viewMain.scaleY * viewMain.sinTheta;
+            viewMain.centerX += 0.2 * viewMain.scaleY * viewMain.cosTheta;
+            viewMain.centerY -= 0.2 * viewMain.scaleY * viewMain.sinTheta;
             break;
         case GLUT_KEY_LEFT:
-            viewMain.centerX -= 0.1 * viewMain.scaleY * viewMain.cosTheta;
-            viewMain.centerY += 0.1 * viewMain.scaleY * viewMain.sinTheta;
+            viewMain.centerX -= 0.2 * viewMain.scaleY * viewMain.cosTheta;
+            viewMain.centerY += 0.2 * viewMain.scaleY * viewMain.sinTheta;
             break;
         case GLUT_KEY_UP:
-            viewMain.centerX += 0.1 * viewMain.scaleY * viewMain.sinTheta;
-            viewMain.centerY += 0.1 * viewMain.scaleY * viewMain.cosTheta;
+            viewMain.centerX += 0.2 * viewMain.scaleY * viewMain.sinTheta;
+            viewMain.centerY += 0.2 * viewMain.scaleY * viewMain.cosTheta;
             break;
         case GLUT_KEY_DOWN:
-            viewMain.centerX -= 0.1 * viewMain.scaleY * viewMain.sinTheta;
-            viewMain.centerY -= 0.1 * viewMain.scaleY * viewMain.cosTheta;
+            viewMain.centerX -= 0.2 * viewMain.scaleY * viewMain.sinTheta;
+            viewMain.centerY -= 0.2 * viewMain.scaleY * viewMain.cosTheta;
             break;
         default:
             break;
@@ -340,7 +515,10 @@ void translateCamera(ScreenCoordinate coords) {
 }
 
 void mousePressedMain(int button, int state, int x, int y) {
-    if (button == GLUT_RIGHT_BUTTON) {
+    ImGuiIO& io = ImGui::GetIO();
+    ImGui_ImplGLUT_MouseFunc(button, state, x, y);
+
+    if (!io.WantCaptureMouse && button == GLUT_RIGHT_BUTTON) {
         if (state == GLUT_DOWN) {
             translateCamera((ScreenCoordinate){x, y});
         }
@@ -357,11 +535,20 @@ void mousePressedMain(int button, int state, int x, int y) {
 }
 
 void mouseMovedMain(int x, int y) {
+    ImGuiIO& io = ImGui::GetIO();
+    ImGui_ImplGLUT_MotionFunc(x, y);
+
     mouseMain.x = x;
     mouseMain.y = y;
+
+    if (!io.WantCaptureMouse) {
+        fillTestArray();
+    }
 }
 
 void onReshapeMain(int w, int h) {
+    ImGui_ImplGLUT_ReshapeFunc(w, h);
+
     settingsMain.windowW = w;
     settingsMain.windowH = h;
 
@@ -380,23 +567,47 @@ void createMainWindow(char *name, uint32_t width, uint32_t height) {
     windowIdMain = glutCreateWindow(name);
 
     pixelsMain = (uint32_t *)malloc(3 * width * height * sizeof(uint32_t));
+    
+    zArray = (WorldCoordinate *)malloc(test_steps * sizeof(WorldCoordinate));
+    dzxArray = (WorldCoordinate *)malloc(test_steps * sizeof(WorldCoordinate));
+    dzyArray = (WorldCoordinate *)malloc(test_steps * sizeof(WorldCoordinate));
 
     for (int i = 0; i < 3 * width * height; i++) {
         pixelsMain[i] = 0;
     }
-    
+
+    // Setup Dear ImGui context
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO &io = ImGui::GetIO(); (void)io;
+    io.IniFilename = NULL;
+
+    ImGui::StyleColorsDark();
+    ImGui_ImplGLUT_Init();
+    ImGui_ImplOpenGL2_Init();
+
+    glutKeyboardUpFunc(ImGui_ImplGLUT_KeyboardUpFunc);
+    glutSpecialUpFunc(ImGui_ImplGLUT_SpecialUpFunc);
+
     glutKeyboardFunc(&keyPressedMain);
     glutSpecialFunc(&specialKeyPressedMain);
     glutMouseFunc(&mousePressedMain);
     glutMotionFunc(&mouseMovedMain);
+    glutPassiveMotionFunc(&mouseMovedMain);
     glutReshapeFunc(&onReshapeMain);
+
+    glutDisplayFunc(&displayMain);
 }
 
 void destroyMainWindow() {
     free(pixelsMain);
+    
+    free(zArray);
+    free(dzxArray);
+    free(dzyArray);
 }
 
-#ifdef USE_DOUBLE
+#ifdef MANDEL_GPU_USE_DOUBLE
 IntPair to_pair(double num) {
     unsigned int sign = num >= 0;
     uint64_t inum = (uint64_t)fabs(num);
