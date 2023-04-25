@@ -385,7 +385,6 @@ void writeData() {
 }
 
 void keyPressedMain(unsigned char key, int x, int y) {
-    fprintf(stderr, "Key %d                   \n\n\n", key);
     ImGuiIO& io = ImGui::GetIO();
     ImGui_ImplGLUT_KeyboardFunc(key, x, y);
     if (io.WantCaptureKeyboard) {
@@ -489,20 +488,20 @@ void specialKeyPressedMain(int key, int x, int y) {
 
     switch (key) {
         case GLUT_KEY_RIGHT:
-            viewMain.centerX += 0.1 * viewMain.scaleY * viewMain.cosTheta;
-            viewMain.centerY -= 0.1 * viewMain.scaleY * viewMain.sinTheta;
+            viewMain.centerX += 0.2 * viewMain.scaleY * viewMain.cosTheta;
+            viewMain.centerY -= 0.2 * viewMain.scaleY * viewMain.sinTheta;
             break;
         case GLUT_KEY_LEFT:
-            viewMain.centerX -= 0.1 * viewMain.scaleY * viewMain.cosTheta;
-            viewMain.centerY += 0.1 * viewMain.scaleY * viewMain.sinTheta;
+            viewMain.centerX -= 0.2 * viewMain.scaleY * viewMain.cosTheta;
+            viewMain.centerY += 0.2 * viewMain.scaleY * viewMain.sinTheta;
             break;
         case GLUT_KEY_UP:
-            viewMain.centerX += 0.1 * viewMain.scaleY * viewMain.sinTheta;
-            viewMain.centerY += 0.1 * viewMain.scaleY * viewMain.cosTheta;
+            viewMain.centerX += 0.2 * viewMain.scaleY * viewMain.sinTheta;
+            viewMain.centerY += 0.2 * viewMain.scaleY * viewMain.cosTheta;
             break;
         case GLUT_KEY_DOWN:
-            viewMain.centerX -= 0.1 * viewMain.scaleY * viewMain.sinTheta;
-            viewMain.centerY -= 0.1 * viewMain.scaleY * viewMain.cosTheta;
+            viewMain.centerX -= 0.2 * viewMain.scaleY * viewMain.sinTheta;
+            viewMain.centerY -= 0.2 * viewMain.scaleY * viewMain.cosTheta;
             break;
         default:
             break;
