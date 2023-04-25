@@ -80,9 +80,12 @@ void setKernelArgs() {
 }
 
 void prepareOpenCl() {
+    fprintf(stderr, "createBufferSpecs\n");
     createBufferSpecs();
+    fprintf(stderr, "createKernelSpecs\n");
     createKernelSpecs();
 
+    fprintf(stderr, "OpenCl\n");
     opencl = new OpenCl(
 #ifdef MANDEL_GPU_USE_DOUBLE
         "shaders/sample_double.cl",
@@ -96,17 +99,22 @@ void prepareOpenCl() {
         config->verbose
     );
 
+    fprintf(stderr, "filename\n");
     char filename[120] = "colourmaps/default.cm";
     if (strlen(config->colour_file)) {
         fprintf(stderr, "Writing fn\n");
         sprintf(filename, "colourmaps/%s", config->colour_file);
         fprintf(stderr, "Writing fn done\n");
     }
+    fprintf(stderr, "ColourMapFromFile\n");
     cm = ColourMapFromFile(filename, config->num_colours);
     cmap = (unsigned int *)malloc(3 * config->num_colours * sizeof(unsigned int));
+    fprintf(stderr, "apply\n");
     cm->apply(cmap);
+    fprintf(stderr, "writeBuffer\n");
     opencl->writeBuffer("colourMap", cmap);
 
+    fprintf(stderr, "setKernelArgs\n");
     setKernelArgs();
 
     fprintf(stderr, "Start initparticles\n");

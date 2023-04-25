@@ -115,6 +115,41 @@ void drawPath() {
     glEnd();
 }
 
+void showInfo() {
+    ImGui::Text("x = %.16f", viewMain.centerX);
+    ImGui::Text("y = %.16f", viewMain.centerY);
+    ImGui::Text("scale = %.3g", viewMain.scaleY); ImGui::SameLine();
+    ImGui::Text("theta = %.3f", viewMain.theta); 
+}
+
+void showColourmapControls() {
+    bool changed = false;
+    char label[100];
+    for (size_t i = 0; i < cm->getColorCount(); i++) {
+        sprintf(label, "Color %zu", i);
+        if (ImGui::TreeNode(label)) {
+            sprintf(label, "##picker %zu", i);
+            changed |= ImGui::ColorPicker3(label, cm->m_y[i].data(), ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_DisplayHSV | ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_NoLabel);
+            sprintf(label, "##slider %zu", i);
+            changed |= ImGui::SliderFloat(label, &(cm->m_x.data()[i]), 0., 1.);
+            ImGui::TreePop();
+        }
+    }
+
+    ImGui::InputText("##Filename", colourmap_filename, 60); ImGui::SameLine();
+    if (ImGui::Button("Save")) {
+        char fn2[80];
+        sprintf(fn2, "colourmaps/%s", colourmap_filename);
+        cm->save(fn2);
+    }
+
+    if (changed) {
+        cm->generate();
+        cm->apply(cmap);
+        opencl->writeBuffer("colourMap", cmap);
+    }
+}
+
 void displayMain() {
     // --------------------------- RESET ---------------------------
     glutSetWindow(windowIdMain);
@@ -203,41 +238,23 @@ void displayMain() {
     ImGui_ImplGLUT_NewFrame();
     ImGui::NewFrame();
 
-    ImGui::SetNextWindowSize(ImVec2(200, 0));
+    ImGui::SetNextWindowSize(ImVec2(220, 0));
     ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 200, 0));
 
     ImGui::Begin("Gradient colors");
     ImGui::PushItemWidth(140);
 
-    bool changed = false;
-    char label[100];
-    // static float kut;
-    for (size_t i = 0; i < cm->getColorCount(); i++) {
-        sprintf(label, "Color %zu", i);
-        if (ImGui::TreeNode(label)) {
-            // kut = cm->m_x[i];
-            sprintf(label, "##picker %zu", i);
-            changed |= ImGui::ColorPicker3(label, cm->m_y[i].data(), ImGuiColorEditFlags_PickerHueWheel | ImGuiColorEditFlags_DisplayRGB | ImGuiColorEditFlags_DisplayHSV | ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_NoLabel);
-            sprintf(label, "##slider %zu", i);
-            changed |= ImGui::SliderFloat(label, &(cm->m_x.data()[i]), 0., 1.);
-            ImGui::TreePop();
-        }
+    if (ImGui::CollapsingHeader("Info")) {
+        showInfo();
     }
 
-    ImGui::InputText("##Filename", colourmap_filename, 60); ImGui::SameLine();
-    if (ImGui::Button("Save")) {
-        char fn2[80];
-        sprintf(fn2, "colourmaps/%s", colourmap_filename);
-        cm->save(fn2);
+    if (ImGui::CollapsingHeader("Colour Map")) {
+        showColourmapControls();
     }
+
+    
 
     ImGui::End();
-
-    if (changed) {
-        cm->generate();
-        cm->apply(cmap);
-        opencl->writeBuffer("colourMap", cmap);
-    }
 
     // --------------------------- DRAW ---------------------------
     ImGui::Render();

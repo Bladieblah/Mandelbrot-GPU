@@ -80,7 +80,10 @@ ColourMap::ColourMap(vector<ColourFloat> colours, size_t size, bool symmetric) {
     map.reserve(m_size);
 
     for (ColourFloat colour : colours) {
-        vector<float> tmp(colour.rgb, colour.rgb + 3 * sizeof(float));
+        vector<float> tmp;
+        tmp.push_back(colour.rgb[0]);
+        tmp.push_back(colour.rgb[1]);
+        tmp.push_back(colour.rgb[2]);
         m_x.push_back(colour.x);
         m_y.push_back(tmp);
     }
@@ -154,11 +157,11 @@ void ColourMap::save(char *fn) {
     FILE *outFile = fopen(fn, "w");
     
     if (outFile) {
-        fprintf(outFile, "kind = f\n");
+        fprintf(outFile, "kind = i\n");
         fprintf(outFile, "symmetric = %d\n", (int)m_symmetric);
 
         for (int i = 0; i < m_color_count; i++) {
-            fprintf(outFile, "%f, {%f, %f, %f}\n", m_x[i], m_y[i][0], m_y[i][1], m_y[i][2]);
+            fprintf(outFile, "%f, {%d, %d, %d}\n", m_x[i], (int)(m_y[i][0] * 255), (int)(m_y[i][1] * 255), (int)(m_y[i][2] * 255));
         }
 
         fclose(outFile);
