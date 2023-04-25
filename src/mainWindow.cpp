@@ -291,9 +291,7 @@ void displayMain() {
     ImGui::Begin("Gradient colors");
     ImGui::PushItemWidth(140);
 
-    // if (ImGui::CollapsingHeader("Info")) {
     showInfo();
-    // }
 
     if (ImGui::CollapsingHeader("Colour Map")) {
         showColourmapControls();
@@ -481,7 +479,6 @@ void keyPressedMain(unsigned char key, int x, int y) {
 }
 
 void specialKeyPressedMain(int key, int x, int y) {
-    fprintf(stderr, "Special %d                 \n\n\n", key);
     ImGuiIO& io = ImGui::GetIO();
     ImGui_ImplGLUT_SpecialFunc(key, x, y);
     if (io.WantCaptureKeyboard) {
@@ -581,35 +578,25 @@ void createMainWindow(char *name, uint32_t width, uint32_t height) {
     }
 
     // Setup Dear ImGui context
-    // fprintf(stderr, "IMGUI_CHECKVERSION\n");
     IMGUI_CHECKVERSION();
-    // fprintf(stderr, "CreateContext\n");
     ImGui::CreateContext();
-    // fprintf(stderr, "GetIO\n");
     ImGuiIO &io = ImGui::GetIO(); (void)io;
     io.IniFilename = NULL;
 
-    // Setup Dear ImGui style
-    // fprintf(stderr, "StyleColorsDark\n");
     ImGui::StyleColorsDark();
-    // fprintf(stderr, "ImGui_ImplGLUT_Init\n");
     ImGui_ImplGLUT_Init();
-    // fprintf(stderr, "ImGui_ImplOpenGL2_Init\n");
     ImGui_ImplOpenGL2_Init();
 
-    // fprintf(stderr, "io funcs\n");
     glutKeyboardUpFunc(ImGui_ImplGLUT_KeyboardUpFunc);
     glutSpecialUpFunc(ImGui_ImplGLUT_SpecialUpFunc);
-    
-    // fprintf(stderr, "io funcs 2\n");
+
     glutKeyboardFunc(&keyPressedMain);
     glutSpecialFunc(&specialKeyPressedMain);
     glutMouseFunc(&mousePressedMain);
     glutMotionFunc(&mouseMovedMain);
     glutPassiveMotionFunc(&mouseMovedMain);
     glutReshapeFunc(&onReshapeMain);
-    
-    // fprintf(stderr, "glutDisplayFunc\n");
+
     glutDisplayFunc(&displayMain);
 }
 
