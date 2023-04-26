@@ -23,8 +23,10 @@ Config *config;
 unsigned int *cmap;
 ColourMap *cm;
 
-chrono::high_resolution_clock::time_point frameTime;
+chrono::high_resolution_clock::time_point timePoint;
 unsigned int frameCount = 0;
+float frameTime = 0;
+uint32_t iterCount = 0;
 /**
  * OpenCL
  */
@@ -159,18 +161,21 @@ void display() {
 
     opencl->startFrame();
     
-    // displayGradient();
     displayMain();
 
     opencl->step("mandelStep");
     opencl->step("renderImage");
     opencl->readBuffer("image", pixelsMain);
 
+    iterCount += config->steps;
+
     chrono::high_resolution_clock::time_point temp = chrono::high_resolution_clock::now();
-    chrono::duration<float> time_span = chrono::duration_cast<chrono::duration<float>>(temp - frameTime);
-    fprintf(stderr, "Step = %d, time = %.4g            \n", frameCount / 2, time_span.count());
+    chrono::duration<float> time_span = chrono::duration_cast<chrono::duration<float>>(temp - timePoint);
+    frameTime = time_span.count();
+    
+    fprintf(stderr, "Step = %d, time = %.4g            \n", frameCount / 2, frameTime);
     fprintf(stderr, "\x1b[%dA", opencl->printCount + 1);
-    frameTime = temp; 
+    timePoint = temp; 
 }
 
 void cleanAll() {
@@ -187,7 +192,7 @@ int main(int argc, char **argv) {
     config = new Config("config.cfg");
     config->printValues();
 
-    frameTime = chrono::high_resolution_clock::now();
+    timePoint = chrono::high_resolution_clock::now();
 
     prepare();
 
@@ -198,7 +203,6 @@ int main(int argc, char **argv) {
     glutInit(&argc, argv);
     fprintf(stderr, "createMainWindow\n");
     createMainWindow("Main", config->width, config->height);
-    // createGradientWindow();
     fprintf(stderr, "glutDisplayFunc\n");
     glutDisplayFunc(&display);
 

@@ -46,8 +46,10 @@ ColourMap *ColourMapFromFloat(FILE *f, size_t size, bool symmetric) {
 
 ColourMap *ColourMapFromFile(char *fn, size_t size) {
     FILE *f;
+    ColourMap *colourmap;
     char kind = 'a';
     int symmetric = 0;
+
 
     f = fopen(fn, "r");
 
@@ -58,21 +60,24 @@ ColourMap *ColourMapFromFile(char *fn, size_t size) {
 
     if (fscanf(f, "kind = %c\n", &kind) == EOF || fscanf(f, "symmetric = %d\n", &symmetric) == EOF) {
         fprintf(stderr, "Error loading cm.\n");
-        fclose(f);
-        return new ColourMap(defaultColours, size, false);
-    }
-
-    switch (kind) {
-        case 'i':
-            return ColourMapFromInt(f, size, symmetric);
-        case 'f':
-            return ColourMapFromFloat(f, size, symmetric);
-        default:
-            break;
+        colourmap = new ColourMap(defaultColours, size, false);
+    } else {
+        switch (kind) {
+            case 'i':
+                colourmap = ColourMapFromInt(f, size, symmetric);
+                break;
+            case 'f':
+                colourmap = ColourMapFromFloat(f, size, symmetric);
+                break;
+            default:
+                colourmap = new ColourMap(defaultColours, size, true);
+                break;
+        }
     }
 
     fclose(f);
-    return new ColourMap(defaultColours, size, true);
+
+    return colourmap;
 }
 
 // --------------------------- Class implementation ---------------------------
