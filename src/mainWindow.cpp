@@ -20,7 +20,7 @@
 int windowIdMain;
 uint32_t *pixelsMain;
 
-size_t test_steps = 20000;
+size_t test_steps = 100000;
 WorldCoordinate *zArray, *dzxArray, *dzyArray;
 size_t escape_time = 0;
 size_t escape_dx = 0;
@@ -151,6 +151,8 @@ void showInfo() {
     ImGui::Text("y = %.16f", viewMain.centerY);
     ImGui::Text("scale = %.3g", viewMain.scaleY); ImGui::SameLine();
     ImGui::Text("theta = %.3f", viewMain.theta);
+    ImGui::Text("Frametime = %.3f", frameTime);
+    ImGui::Text("Iterations = %d", iterCount);
 
     ScreenCoordinate screen({mouseMain.x, mouseMain.y});
     WorldCoordinate fractal = screen.toPixel(settingsMain).toWorld(viewMain);
@@ -325,6 +327,7 @@ void updateView() {
     opencl->setKernelArg("initParticles", 1, sizeof(ViewSettings), &(viewMain));
 #endif
     opencl->step("initParticles");
+    iterCount = 0;
 }
 
 void selectRegion() {
@@ -435,6 +438,7 @@ void keyPressedMain(unsigned char key, int x, int y) {
                 opencl->setKernelArg("initParticles", 1, sizeof(ViewSettings), &(viewMain));
 #endif
                 opencl->step("initParticles");
+                iterCount = 0;
             }
             break;
 
@@ -467,6 +471,7 @@ void keyPressedMain(unsigned char key, int x, int y) {
 
         case 'R':
             opencl->step("initParticles");
+            iterCount = 0;
             break;
 
         case 'q':

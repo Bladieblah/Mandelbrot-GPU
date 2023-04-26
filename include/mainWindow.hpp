@@ -76,4 +76,7 @@ extern ViewSettings viewMain, defaultView;
 extern WindowSettings settingsMain;
 extern uint32_t *pixelsMain;
 
+extern float frameTime;
+extern uint32_t iterCount;
+
 #endif
