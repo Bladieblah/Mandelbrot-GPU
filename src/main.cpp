@@ -34,7 +34,7 @@ uint32_t iterCount = 0;
 OpenCl *opencl;
 uint64_t *initState, *initSeq;
 
-unsigned int superSample = 2;
+unsigned int superSample;
 
 vector<BufferSpec> bufferSpecs;
 void createBufferSpecs() {
@@ -191,6 +191,7 @@ void cleanAll() {
 int main(int argc, char **argv) {
     config = new Config("config.cfg");
     config->printValues();
+    superSample = config->anti_alias_samples;
 
     timePoint = chrono::high_resolution_clock::now();
 
