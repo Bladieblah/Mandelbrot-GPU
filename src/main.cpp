@@ -175,7 +175,7 @@ void display() {
     
     fprintf(stderr, "Step = %d, time = %.4g            \n", frameCount / 2, frameTime);
     fprintf(stderr, "\x1b[%dA", opencl->printCount + 1);
-    timePoint = temp; 
+    timePoint = temp;
 }
 
 void cleanAll() {
