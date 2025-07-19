@@ -34,7 +34,6 @@ std::stack<ViewSettings> viewStackMain;
 bool selecting = true;
 bool drawGradient = true;
 bool drawDerivatives = true;
-unsigned int count0 = 0;
 char colourmap_filename[60];
 
 #ifdef MANDEL_GPU_USE_DOUBLE
@@ -145,6 +144,10 @@ void drawPath() {
 
     glEnd();
 }
+bool SliderUInt(const char* label, unsigned int* v, unsigned int v_min, unsigned int v_max, const char *format = "%d", ImGuiSliderFlags flags = 0)
+{
+    return ImGui::SliderScalar(label, ImGuiDataType_U32, v, &v_min, &v_max, format, flags);
+}
 
 void showInfo() {
     ImGui::SeparatorText("Info");
@@ -166,9 +169,29 @@ void showInfo() {
     ImGui::Text("dx = %zu", escape_dx); ImGui::SameLine();
     ImGui::Text("dy = %zu", escape_dy);
 
-
     ImGui::Checkbox("Draw Box", &selecting);
     ImGui::Checkbox("Draw Derivatives", &drawDerivatives);
+
+    ImGui::SeparatorText("Stripes");
+
+    bool changed;
+
+    changed = ImGui::SliderFloat("Frequency", &(config->stripe_freq), 0., 10.);
+    if (changed) {
+        opencl->setKernelArg("mandelStep", 2, sizeof(float), &(config->stripe_freq));
+        opencl->step("initParticles");
+        iterCount = 0;
+    }
+
+    changed = ImGui::SliderFloat("Strength", &(config->stripe_mix), 0., 1.);
+    if (changed) opencl->setKernelArg("renderImage", 6, sizeof(float), &(config->stripe_mix));
+
+    changed = SliderUInt("Offset", &(config->colour_offset), 0, config->num_colours);
+    if (changed) opencl->setKernelArg("renderImage", 4, sizeof(unsigned int), &(config->colour_offset));
+
+    changed = ImGui::SliderFloat("Variance", &(config->colour_variance), 0.1, 10, "%.3f", ImGuiSliderFlags_Logarithmic);
+    if (changed) opencl->setKernelArg("renderImage", 7, sizeof(float), &(config->colour_variance));
+    
 }
 
 void showColourmapControls() {
@@ -363,10 +386,10 @@ void writePng() {
 
 #ifdef MANDEL_GPU_USE_DOUBLE
     sprintf(filename, "images/weighted_%lu_%lu_%.6f_%.6f_%.6f_%.6f_%d.png", 
-        viewMain.sizeX, viewMain.sizeY, viewMain.scaleY, viewMain.theta, viewMain.centerX, viewMain.centerY, count0);
+        viewMain.sizeX, viewMain.sizeY, viewMain.scaleY, viewMain.theta, viewMain.centerX, viewMain.centerY, config->colour_offset);
 #else
-    sprintf(filename, "images/weighted_%d_%d_%.6f_%.6f_%.6f_%.6f_%d.png", 
-        viewMain.sizeX, viewMain.sizeY, viewMain.scaleY, viewMain.theta, viewMain.centerX, viewMain.centerY, count0);
+    sprintf(filename, "images/weighted_%d_%d_%.6e_%.3f_%.10f_%.10f_%d.png", 
+        viewMain.sizeX, viewMain.sizeY, viewMain.scaleY, viewMain.theta, viewMain.centerX, viewMain.centerY, config->colour_offset);
 #endif
     
     unsigned char *image8Bit = (unsigned char *)malloc(3 * w * h * sizeof(unsigned char));
@@ -456,14 +479,14 @@ void keyPressedMain(unsigned char key, int x, int y) {
             break;
         
         case ',':
-            if (count0 > 0) {
-                count0 -= 4;
-                opencl->setKernelArg("renderImage", 4, sizeof(unsigned int), &count0);
+            if (config->colour_offset > 3) {
+                config->colour_offset -= 4;
+                opencl->setKernelArg("renderImage", 4, sizeof(unsigned int), &(config->colour_offset));
             }
             break;
         case '.':
-            count0 += 4;
-            opencl->setKernelArg("renderImage", 4, sizeof(unsigned int), &count0);
+            config->colour_offset += 4;
+            opencl->setKernelArg("renderImage", 4, sizeof(unsigned int), &(config->colour_offset));
             break;
 
         case 'R':
@@ -560,21 +583,37 @@ void onReshapeMain(int w, int h) {
     glMatrixMode(GL_MODELVIEW);
 }
 
+#define MAX_WINDOW_WIDTH 1512
+#define MAX_WINDOW_HEIGHT 916
+
 void createMainWindow(char *name, uint32_t width, uint32_t height) {
     settingsMain.width = width;
     settingsMain.height = height;
+    
+    settingsMain.windowW = width;
+    settingsMain.windowH = height;
+
+    if (settingsMain.windowH > MAX_WINDOW_HEIGHT) {
+        settingsMain.windowW = (uint32_t)(settingsMain.windowW / (double)settingsMain.windowH * MAX_WINDOW_HEIGHT);
+        settingsMain.windowH = MAX_WINDOW_HEIGHT;
+    }
+
+    if (settingsMain.windowW > MAX_WINDOW_WIDTH) {
+        settingsMain.windowH = (uint32_t)(settingsMain.windowH / (double)settingsMain.windowW * MAX_WINDOW_WIDTH);
+        settingsMain.windowW = MAX_WINDOW_WIDTH;
+    }
 
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-    glutInitWindowSize(width, height);
+    glutInitWindowSize(settingsMain.windowW, settingsMain.windowH);
     windowIdMain = glutCreateWindow(name);
 
-    pixelsMain = (uint32_t *)malloc(3 * width * height * sizeof(uint32_t));
+    pixelsMain = (uint32_t *)malloc(3 * settingsMain.width * settingsMain.height * sizeof(uint32_t));
     
     zArray = (WorldCoordinate *)malloc(test_steps * sizeof(WorldCoordinate));
     dzxArray = (WorldCoordinate *)malloc(test_steps * sizeof(WorldCoordinate));
     dzyArray = (WorldCoordinate *)malloc(test_steps * sizeof(WorldCoordinate));
 
-    for (int i = 0; i < 3 * width * height; i++) {
+    for (int i = 0; i < 3 * settingsMain.width * settingsMain.height; i++) {
         pixelsMain[i] = 0;
     }
 

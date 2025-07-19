@@ -21,7 +21,10 @@ public:
     unsigned int height = 720;
     unsigned int steps = 100;
     unsigned int anti_alias_samples = 2;
+    
     unsigned int num_colours = 1000;
+    unsigned int colour_offset = 0;
+    float colour_variance = 3;
 
     bool profile = true;
     bool verbose = true;
@@ -34,8 +37,8 @@ public:
     float_type center_y = 0.;
     float_type theta = 0.;
     
-    float_type stripe_freq = 1.;
-    float_type stripe_mix = 0.;
+    float stripe_freq = 3.;
+    float stripe_mix = 0.2;
 
     Config(char *filename);
     void printValues();
@@ -50,11 +53,15 @@ private:
         {"height", {'i', (void *)&height}},
         {"steps", {'i', (void *)&steps}},
         {"anti_alias_samples", {'i', (void *)&anti_alias_samples}},
+        
         {"num_colours", {'i', (void *)&num_colours}},
-        {"scale", {'f', (void *)&scale}},
-        {"center_x", {'f', (void *)&center_x}},
-        {"center_y", {'f', (void *)&center_y}},
-        {"theta", {'f', (void *)&theta}},
+        {"colour_offset", {'i', (void *)&colour_offset}},
+        {"colour_variance", {'f', (void *)&colour_variance}},
+        
+        {"scale", {'d', (void *)&scale}},
+        {"center_x", {'d', (void *)&center_x}},
+        {"center_y", {'d', (void *)&center_y}},
+        {"theta", {'d', (void *)&theta}},
         {"stripe_freq", {'f', (void *)&stripe_freq}},
         {"stripe_mix", {'f', (void *)&stripe_mix}},
         {"profile", {'b', (void *)&profile}},

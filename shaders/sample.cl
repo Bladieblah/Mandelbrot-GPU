@@ -276,7 +276,7 @@ __kernel void initParticles(global Particle *particles, ViewSettings view) {
     particles[gid].escaped = !isValid(offset);
 }
 
-__kernel void mandelStep(global Particle *particles, unsigned int stepCount) {
+__kernel void mandelStep(global Particle *particles, unsigned int stepCount, float stripeFrequency) {
     const size_t x = get_global_id(0);
     const size_t y = get_global_id(1);
     const size_t W = get_global_size(0);
@@ -333,7 +333,8 @@ __kernel void renderImage(
     global uint *colourMap,
     uint numColours,
     uint count0,
-    uint superSample
+    uint superSample,
+    float stripeMix
 ) {
     const uint x = get_global_id(0);
     const uint y = get_global_id(1);

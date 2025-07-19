@@ -71,21 +71,16 @@ void setKernelArgs() {
 
     opencl->setKernelBufferArg("mandelStep", 0, "particles");
     opencl->setKernelArg("mandelStep", 1, sizeof(uint32_t), &(config->steps));
+    opencl->setKernelArg("mandelStep", 2, sizeof(float), &(config->stripe_freq));
 
-    unsigned int zero = 0;
     opencl->setKernelBufferArg("renderImage", 0, "particles");
     opencl->setKernelBufferArg("renderImage", 1, "image");
     opencl->setKernelBufferArg("renderImage", 2, "colourMap");
     opencl->setKernelArg("renderImage", 3, sizeof(unsigned int), &(config->num_colours));
-    opencl->setKernelArg("renderImage", 4, sizeof(unsigned int), &zero);
+    opencl->setKernelArg("renderImage", 4, sizeof(unsigned int), &(config->colour_offset));
     opencl->setKernelArg("renderImage", 5, sizeof(unsigned int), &superSample);
-    
-// #ifdef MANDEL_GPU_USE_DOUBLE
-    fprintf(stderr, "Setting mandelstep 2 to value %f\n", config->stripe_freq);
-    opencl->setKernelArg("mandelStep", 2, sizeof(float), &(config->stripe_freq));
-    fprintf(stderr, "Setting renderImage 6 to value %f\n", config->stripe_mix);
     opencl->setKernelArg("renderImage", 6, sizeof(float), &(config->stripe_mix));
-// #endif
+    opencl->setKernelArg("renderImage", 7, sizeof(float), &(config->colour_variance));
 }
 
 void prepareOpenCl() {
@@ -111,18 +106,13 @@ void prepareOpenCl() {
     fprintf(stderr, "filename\n");
     char filename[120] = "colourmaps/blue_green.cm";
     if (strlen(config->colour_file)) {
-        fprintf(stderr, "Writing fn\n");
         sprintf(filename, "colourmaps/%s", config->colour_file);
-        fprintf(stderr, "Writing fn done\n");
     }
 
     fprintf(stderr, "ColourMapFromFile: %s\n", filename);
     cm = ColourMapFromFile(filename, config->num_colours);
-    fprintf(stderr, "cmap\n");
     cmap = (unsigned int *)malloc(3 * config->num_colours * sizeof(unsigned int));
-    fprintf(stderr, "apply\n");
     cm->apply(cmap);
-    fprintf(stderr, "writeBuffer\n");
     opencl->writeBuffer("colourMap", cmap);
 
     fprintf(stderr, "setKernelArgs\n");
@@ -197,7 +187,11 @@ void cleanAll() {
 }
 
 int main(int argc, char **argv) {
-    config = new Config("config.cfg");
+    if (argc == 2) {
+        config = new Config(argv[1]);
+    }else {
+        config = new Config("config.cfg");
+    }
     config->printValues();
     superSample = config->anti_alias_samples;
 
