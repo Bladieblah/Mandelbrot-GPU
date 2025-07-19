@@ -33,6 +33,9 @@ public:
     float_type center_x = -0.5;
     float_type center_y = 0.;
     float_type theta = 0.;
+    
+    float_type stripe_freq = 1.;
+    float_type stripe_mix = 0.;
 
     Config(char *filename);
     void printValues();
@@ -52,6 +55,8 @@ private:
         {"center_x", {'f', (void *)&center_x}},
         {"center_y", {'f', (void *)&center_y}},
         {"theta", {'f', (void *)&theta}},
+        {"stripe_freq", {'f', (void *)&stripe_freq}},
+        {"stripe_mix", {'f', (void *)&stripe_mix}},
         {"profile", {'b', (void *)&profile}},
         {"verbose", {'b', (void *)&verbose}},
         {"useGpu", {'b', (void *)&useGpu}},

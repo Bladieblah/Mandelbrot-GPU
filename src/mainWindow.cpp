@@ -14,6 +14,7 @@
 #include "colourMap.hpp"
 #include "config.hpp"
 #include "coordinates.hpp"
+#include "lodepng.hpp"
 #include "mainWindow.hpp"
 #include "opencl.hpp"
 
@@ -304,6 +305,7 @@ void displayMain() {
     ImGui::End();
 
     // --------------------------- DRAW ---------------------------
+    
     ImGui::Render();
     ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
     glFlush();
@@ -352,39 +354,34 @@ void selectRegion() {
     updateView();
 }
 
-void writeData() {
-    int i, j, k;
-    FILE *outFile;
+void writePng() {
     char filename[200];
 
+    uint32_t w = settingsMain.width;
+    uint32_t h = settingsMain.height;
+
+
 #ifdef MANDEL_GPU_USE_DOUBLE
-    sprintf(filename, "raw_images/weighted_%lu_%lu_%.6f_%.6f_%.6f_%.6f_%d.csv", 
+    sprintf(filename, "images/weighted_%lu_%lu_%.6f_%.6f_%.6f_%.6f_%d.png", 
         viewMain.sizeX, viewMain.sizeY, viewMain.scaleY, viewMain.theta, viewMain.centerX, viewMain.centerY, count0);
 #else
-    sprintf(filename, "raw_images/weighted_%d_%d_%.6f_%.6f_%.6f_%.6f_%d.csv", 
+    sprintf(filename, "images/weighted_%d_%d_%.6f_%.6f_%.6f_%.6f_%d.png", 
         viewMain.sizeX, viewMain.sizeY, viewMain.scaleY, viewMain.theta, viewMain.centerX, viewMain.centerY, count0);
 #endif
     
-    outFile = fopen(filename, "w");
+    unsigned char *image8Bit = (unsigned char *)malloc(3 * w * h * sizeof(unsigned char));
 
-    if (outFile == NULL) {
-        fprintf(stderr, "\nError opening file %s\n", filename);
-        return;
-    }
-
-    k = 0;
-    for (j = 0; j < viewMain.sizeY; j++) {
-        fprintf(outFile, "%u", pixelsMain[k]);
-        k++;
-
-        for (i = 1; i < 3 * viewMain.sizeX; i++) {
-            fprintf(outFile, ",%u", pixelsMain[k]);
-            k++;
+    for (uint32_t i = 0; i < h; i++) {
+        for (uint32_t j = 0; j < 3 * w; j++) {
+            image8Bit[3 * w * (h - i - 1) + j] = pixelsMain[3 * w * i + j] >> ((sizeof(unsigned int) - sizeof(unsigned char)) * 8);
         }
-        fprintf(outFile, "\n");
     }
+    
+    unsigned error = lodepng_encode24_file(filename, image8Bit, settingsMain.width, settingsMain.height);
 
-    fclose(outFile);
+    if (error){
+        fprintf(stderr, "Encoder error %d: %s\n", error, lodepng_error_text(error));
+    }
 }
 
 void keyPressedMain(unsigned char key, int x, int y) {
@@ -405,7 +402,7 @@ void keyPressedMain(unsigned char key, int x, int y) {
             break;
         
         case 'W':
-            writeData();
+            writePng();
             break;
         
         case 'g':

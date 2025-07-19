@@ -19,6 +19,8 @@ typedef struct Particle {
     ComplexDouble pos, offset;
     unsigned int iterCount;
     int escaped;
+    float stripeAccum;
+    float prevAccum;
 } Particle;
 
 typedef struct ViewSettings {

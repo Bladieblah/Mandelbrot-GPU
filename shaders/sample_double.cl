@@ -287,7 +287,6 @@ inline IntPair cnorm2d(ComplexDouble z) {
 /**
  * Checks
  */
-// TODO: Redo all these
 constant IntPair RADIUS_1 = {true, 0UL, 161956694476507040UL};
 constant IntPair RADIUS_2 = {true, 0UL, 63129369906252520UL};
 constant IntPair RADIUS_3 = {true, 0UL, 34905851473476896UL};
@@ -300,7 +299,8 @@ constant ComplexDouble CENTER_3 = {{true, 0UL, 5192758456749238272UL}, {true, 0U
 constant ComplexDouble CENTER_4 = {{false, 0UL, 9306382385186467840UL}, {true, 0UL, 10385516913498476544UL}};
 constant ComplexDouble CENTER_5 = {{true, 0UL, 6991316003935920128UL}, {true, 0UL, 6198106008766409728UL}};
 
-constant ulong ESCAPE_RADIUS = 16UL;
+// constant ulong ESCAPE_RADIUS = 16UL;
+constant ulong ESCAPE_RADIUS = 1000000UL;
 
 inline bool isValid(ComplexDouble coord) {
     IntPair c2 = cnorm2d(coord);
@@ -401,6 +401,8 @@ typedef struct Particle {
     ComplexDouble pos, offset;
     unsigned int iterCount;
     int escaped;
+    float stripeAccum;
+    float prevAccum;
 } Particle;
 
 __kernel void initParticles(global Particle *particles, ViewSettings view) {
@@ -416,15 +418,21 @@ __kernel void initParticles(global Particle *particles, ViewSettings view) {
     particles[gid].offset = offset;
     particles[gid].iterCount = 0;
     particles[gid].escaped = !isValid(offset);
+    particles[gid].stripeAccum = 0.0f;
+    particles[gid].prevAccum = 0.0f;
+
     // particles[gid].escaped = 0;
 }
 
-__kernel void mandelStep(global Particle *particles, unsigned int stepCount) {
+#define I_SKIP 3
+
+__kernel void mandelStep(global Particle *particles, unsigned int stepCount, float stripeFrequency) {
     const size_t x = get_global_id(0);
     const size_t y = get_global_id(1);
     const size_t W = get_global_size(0);
 
     size_t gid = (W * y + x);
+    stripeFrequency = 8;
 
     Particle tmp = particles[gid];
 
@@ -440,6 +448,17 @@ __kernel void mandelStep(global Particle *particles, unsigned int stepCount) {
 
         tmp.pos = add_complex(csquared(tmp.pos), tmp.offset);
         tmp.iterCount++;
+
+        if (tmp.iterCount >= I_SKIP) {
+            float angle = atan2(
+                (float)tmp.pos.y.integ + (float)tmp.pos.y.fract / INTPAIR_PRECISION,
+                (float)tmp.pos.x.integ + (float)tmp.pos.x.fract / INTPAIR_PRECISION
+            );
+            // float stripeVal  = 0.5f + 0.5f * sin(stripeFrequency * angle);
+            float stripeVal  = 0.5f + 0.5f * cos(stripeFrequency * angle);
+            tmp.prevAccum = tmp.stripeAccum;
+            tmp.stripeAccum += stripeVal;
+        }
     }
 
     particles[gid] = tmp;
@@ -467,17 +486,42 @@ inline void add_particle(
     uint index,
     uint index_p,
     uint count0,
-    float issq
+    float issq,
+    float stripeMix
 ) {
     if (!particles[index_p].escaped || !particles[index_p].iterCount) {
         return;
     }
 
-    IntPair rad = cnorm2d(particles[index_p].pos);
-    float count = (float)particles[index_p].iterCount + 1 - log(log(rad.integ + (float)rad.fract / INTPAIR_PRECISION)) / M_LN2;
-    uint colorIndex = 3 * ((uint)(4 * (count + count0)) % numColours);
+    stripeMix = 2;
+
+    IntPair _rad = cnorm2d(particles[index_p].pos);
+    float rad = _rad.integ + (float)_rad.fract / INTPAIR_PRECISION;
+    float iterCount = particles[index_p].iterCount;
+    float count = (float)particles[index_p].iterCount + 1 - log(log(rad)) / M_LN2;
+    
+    float stripeValue = 0;
+    if (particles[index_p].iterCount > I_SKIP + 1) {
+        float stripeAvg = particles[index_p].stripeAccum / (iterCount - I_SKIP);
+        float prevAvg   = particles[index_p].prevAccum   / (iterCount - I_SKIP - 1);
+        float d = log(log((float)ESCAPE_RADIUS) / log(rad)) / M_LN2;
+        float interpolation = d - (int)d;
+        // float interpolation = count - (float)(int)count;
+        // float interpolation = 1;
+        stripeValue = interpolation * stripeAvg + (1 - interpolation) * prevAvg;
+    }
+
+    // uint colorIndex = 3 * ((uint)(4 * (count + count0)) % numColours);
+
+    uint colorIndex = 3 * ((uint)(4 * (count * (pow(stripeValue, stripeMix)) + count0)) % numColours);
+    // uint colorIndex = 3 * ((uint)(numColours * (stripeValue + count0)) % numColours);
+    // uint colorIndex = 3 * ((uint)(700 * iterCount + stripeValue * numColours/5) % numColours);
+    // uint colorIndex = 3 * ((uint)(700 * iterCount) % numColours);
     // uint colorIndex = 3 * (transform_count((uint)(8 * count), count0) / 2 % numColours);
-    float ease = clamp(count * 0.03, 0., 1.) * issq;
+
+    // float ease = clamp(count * 0.03, 0., 1.) * issq;
+    float ease = 1;
+
     
     data[index]     += ease * colourMap[colorIndex];
     data[index + 1] += ease * colourMap[colorIndex + 1];
@@ -490,7 +534,8 @@ __kernel void renderImage(
     global uint *colourMap,
     uint numColours,
     uint count0,
-    uint superSample
+    uint superSample,
+    float stripeMix
 ) {
     const uint x = get_global_id(0);
     const uint y = get_global_id(1);
@@ -515,7 +560,8 @@ __kernel void renderImage(
                 index,
                 (superSample * W * (superSample * y + j) + superSample * x + i), 
                 count0,
-                issq
+                issq,
+                stripeMix
             );
         }
     }

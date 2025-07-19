@@ -79,6 +79,13 @@ void setKernelArgs() {
     opencl->setKernelArg("renderImage", 3, sizeof(unsigned int), &(config->num_colours));
     opencl->setKernelArg("renderImage", 4, sizeof(unsigned int), &zero);
     opencl->setKernelArg("renderImage", 5, sizeof(unsigned int), &superSample);
+    
+// #ifdef MANDEL_GPU_USE_DOUBLE
+    fprintf(stderr, "Setting mandelstep 2 to value %f\n", config->stripe_freq);
+    opencl->setKernelArg("mandelStep", 2, sizeof(float), &(config->stripe_freq));
+    fprintf(stderr, "Setting renderImage 6 to value %f\n", config->stripe_mix);
+    opencl->setKernelArg("renderImage", 6, sizeof(float), &(config->stripe_mix));
+// #endif
 }
 
 void prepareOpenCl() {
@@ -102,13 +109,14 @@ void prepareOpenCl() {
     );
 
     fprintf(stderr, "filename\n");
-    char filename[120] = "colourmaps/default.cm";
+    char filename[120] = "colourmaps/blue_green.cm";
     if (strlen(config->colour_file)) {
         fprintf(stderr, "Writing fn\n");
         sprintf(filename, "colourmaps/%s", config->colour_file);
         fprintf(stderr, "Writing fn done\n");
     }
-    fprintf(stderr, "ColourMapFromFile\n");
+
+    fprintf(stderr, "ColourMapFromFile: %s\n", filename);
     cm = ColourMapFromFile(filename, config->num_colours);
     fprintf(stderr, "cmap\n");
     cmap = (unsigned int *)malloc(3 * config->num_colours * sizeof(unsigned int));
