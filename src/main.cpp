@@ -190,7 +190,7 @@ int main(int argc, char **argv) {
     if (argc == 2) {
         config = new Config(argv[1]);
     }else {
-        config = new Config("config.cfg");
+        config = new Config("default.cfg");
     }
     config->printValues();
     superSample = config->anti_alias_samples;

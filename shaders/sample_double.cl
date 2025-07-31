@@ -299,8 +299,7 @@ constant ComplexDouble CENTER_3 = {{true, 0UL, 5192758456749238272UL}, {true, 0U
 constant ComplexDouble CENTER_4 = {{false, 0UL, 9306382385186467840UL}, {true, 0UL, 10385516913498476544UL}};
 constant ComplexDouble CENTER_5 = {{true, 0UL, 6991316003935920128UL}, {true, 0UL, 6198106008766409728UL}};
 
-// constant ulong ESCAPE_RADIUS = 16UL;
-constant ulong ESCAPE_RADIUS = 8900000UL; // frequency = 1
+constant ulong ESCAPE_RADIUS = 8900000UL;
 
 inline bool isValid(ComplexDouble coord) {
     IntPair c2 = cnorm2d(coord);

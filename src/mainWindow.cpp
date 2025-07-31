@@ -172,9 +172,17 @@ void showInfo() {
     ImGui::Checkbox("Draw Box", &selecting);
     ImGui::Checkbox("Draw Derivatives", &drawDerivatives);
 
-    ImGui::SeparatorText("Stripes");
-
     bool changed;
+
+    ImGui::SeparatorText("Colors");
+
+    changed = SliderUInt("Offset", &(config->colour_offset), 0, config->num_colours);
+    if (changed) opencl->setKernelArg("renderImage", 4, sizeof(unsigned int), &(config->colour_offset));
+
+    changed = ImGui::SliderFloat("Variance", &(config->colour_variance), 0.1, 10, "%.3f", ImGuiSliderFlags_Logarithmic);
+    if (changed) opencl->setKernelArg("renderImage", 7, sizeof(float), &(config->colour_variance));
+
+    ImGui::SeparatorText("Stripes");
 
     changed = ImGui::SliderFloat("Frequency", &(config->stripe_freq), 0., 10.);
     if (changed) {
@@ -183,14 +191,8 @@ void showInfo() {
         iterCount = 0;
     }
 
-    changed = ImGui::SliderFloat("Strength", &(config->stripe_mix), 0., 1.);
+    changed = ImGui::SliderFloat("Strength", &(config->stripe_mix), 1e-3, 10., "%.3f", ImGuiSliderFlags_Logarithmic);
     if (changed) opencl->setKernelArg("renderImage", 6, sizeof(float), &(config->stripe_mix));
-
-    changed = SliderUInt("Offset", &(config->colour_offset), 0, config->num_colours);
-    if (changed) opencl->setKernelArg("renderImage", 4, sizeof(unsigned int), &(config->colour_offset));
-
-    changed = ImGui::SliderFloat("Variance", &(config->colour_variance), 0.1, 10, "%.3f", ImGuiSliderFlags_Logarithmic);
-    if (changed) opencl->setKernelArg("renderImage", 7, sizeof(float), &(config->colour_variance));
     
 }
 
@@ -311,11 +313,11 @@ void displayMain() {
     ImGui_ImplGLUT_NewFrame();
     ImGui::NewFrame();
 
-    ImGui::SetNextWindowSize(ImVec2(220, 0));
-    ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 200, 0));
+    ImGui::SetNextWindowSize(ImVec2(280, 0));
+    ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - 280, 0));
 
-    ImGui::Begin("Gradient colors");
-    ImGui::PushItemWidth(140);
+    ImGui::Begin("Controls");
+    ImGui::PushItemWidth(200);
 
     showInfo();
 
