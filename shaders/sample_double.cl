@@ -490,8 +490,6 @@ inline void add_particle(
         return;
     }
 
-    // stripeMix = 1;
-
     IntPair _rad = cnorm2d(particles[index_p].pos);
     float rad = _rad.integ + (float)_rad.fract / INTPAIR_PRECISION;
     float iterCount = particles[index_p].iterCount;

@@ -179,7 +179,7 @@ void showInfo() {
     changed = SliderUInt("Offset", &(config->colour_offset), 0, config->num_colours);
     if (changed) opencl->setKernelArg("renderImage", 4, sizeof(unsigned int), &(config->colour_offset));
 
-    changed = ImGui::SliderFloat("Variance", &(config->colour_variance), 0.1, 10, "%.3f", ImGuiSliderFlags_Logarithmic);
+    changed = ImGui::SliderFloat("Variance", &(config->colour_variance), 0.01, 10, "%.3f", ImGuiSliderFlags_Logarithmic);
     if (changed) opencl->setKernelArg("renderImage", 7, sizeof(float), &(config->colour_variance));
 
     ImGui::SeparatorText("Stripes");
@@ -298,10 +298,10 @@ void displayMain() {
         );
 
         glBegin(GL_QUADS);
-            glTexCoord2f(0.0f, 0.0f); glVertex2f(-1.0, -1.0);
-            glTexCoord2f(1.0f, 0.0f); glVertex2f(-1.0,  1.0);
-            glTexCoord2f(1.0f, 1.0f); glVertex2f(-0.9,  1.0);
-            glTexCoord2f(0.0f, 1.0f); glVertex2f(-0.9, -1.0);
+            glTexCoord2f(1.0f, 0.0f); glVertex2f(-1.0, -1.0);
+            glTexCoord2f(0.0f, 0.0f); glVertex2f(-1.0,  1.0);
+            glTexCoord2f(0.0f, 1.0f); glVertex2f(-0.9,  1.0);
+            glTexCoord2f(1.0f, 1.0f); glVertex2f(-0.9, -1.0);
         glEnd();
 
         glDisable (GL_TEXTURE_2D);
